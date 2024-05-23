@@ -2,21 +2,44 @@ use std::{num::ParseIntError, time::Duration};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
-pub enum MyError {
-    #[error(transparent)]
+pub enum ParseTimeError {
+    #[error("Time must be an integer")]
     ParseIntError(#[from] ParseIntError),
 }
 
-pub fn parse_duration(input: &str) -> Result<Duration, MyError> {
-    let (mins, _) = match input.split_once('m') {
-        Some((mins, input)) => {
-            let mins = mins.parse::<u64>()?;
-            (Duration::from_secs(mins * 60), input)
-        }
-        None => (Duration::ZERO, input),
-    };
+pub fn parse_duration(input: &str) -> Result<Duration, ParseTimeError> {
+    let mut total_duration = Duration::ZERO;
 
-    Ok(mins)
+    do_parse(input, 'h')
+        .and_then(|(duration, remaining)| {
+            total_duration += duration;
+            do_parse(remaining, 'm')
+        })
+        .and_then(|(duration, remaining)| {
+            total_duration += duration;
+            do_parse(remaining, 's')
+        })
+        .map(|(duration, _)| {
+            total_duration += duration;
+            total_duration
+        })
+}
+
+fn do_parse(input: &str, unit: char) -> Result<(Duration, &str), ParseTimeError> {
+    match input.split_once(unit) {
+        Some((time, input)) => {
+            let time = time.parse::<u64>()?;
+            let duration = match unit {
+                'h' => Duration::from_secs(time * 3600),
+                'm' => Duration::from_secs(time * 60),
+                's' => Duration::from_secs(time),
+                _ => unreachable!(),
+            };
+
+            Ok((duration, input))
+        }
+        None => Ok((Duration::ZERO, input)),
+    }
 }
 
 #[cfg(test)]
@@ -30,8 +53,8 @@ mod tests {
         assert_eq!(parse_duration("0m").unwrap(), Duration::ZERO);
 
         assert!(matches!(
-            parse_duration("am"),
-            Err(MyError::ParseIntError(_))
+            parse_duration(".m"),
+            Err(ParseTimeError::ParseIntError(_))
         ));
     }
 }

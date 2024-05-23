@@ -9,10 +9,10 @@ pub struct Timer {
 }
 
 impl Timer {
-    pub fn new(t: u64) -> Self {
+    pub fn new(t: Duration) -> Self {
         Timer {
             start: Instant::now(),
-            duration: Duration::from_secs(t),
+            duration: t,
         }
     }
 

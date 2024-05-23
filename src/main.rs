@@ -6,8 +6,9 @@ TODO:
 mod parser;
 mod timer;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use parser::parse_duration;
+use std::time::Duration;
 use timer::Timer;
 
 #[derive(Parser)]
@@ -15,15 +16,29 @@ use timer::Timer;
 #[command(version = "0.1")]
 #[command(about = "Time", long_about = None)]
 struct Cli {
-    #[arg(value_parser = parse_duration, short, long)]
-    duration: u64,
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    #[command(about = "Start the timer")]
+    Timer {
+        #[arg(value_parser = parse_duration, short, long)]
+        time: Duration,
+    },
 }
 
 fn main() {
     let cli = Cli::parse();
 
-    let time_in_minutes = cli.duration * 60;
-
-    let timer = Timer::new(time_in_minutes);
-    timer.countdown();
+    match &cli.command {
+        Some(Commands::Timer { time }) => {
+            let timer = Timer::new(*time);
+            timer.countdown();
+        }
+        None => {
+            println!("No command provided");
+        }
+    }
 }
