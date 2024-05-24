@@ -16,7 +16,7 @@ pub enum ParseTimeError {
 pub fn parse_duration(input: &str) -> Result<Duration, ParseTimeError> {
     let mut total_duration = Duration::ZERO;
 
-    do_parse(input, 'h')
+    do_parse(input.trim(), 'h')
         .and_then(|(duration, remaining)| {
             total_duration += duration;
             do_parse(remaining, 'm')
