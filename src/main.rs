@@ -1,6 +1,5 @@
 /*
 TODO:
-- add unit tests
 - Ratatui
 */
 mod parser;
@@ -14,7 +13,7 @@ use timer::Timer;
 #[derive(Parser)]
 #[command(name = "Pomodoro Timer")]
 #[command(version = "0.1")]
-#[command(about = "Time", long_about = None)]
+#[command(about = "Pomodoro Timer", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -25,7 +24,7 @@ enum Commands {
     #[command(about = "Start the timer")]
     Timer {
         #[arg(value_parser = parse_duration, short, long)]
-        time: Duration,
+        duration: Duration,
     },
 }
 
@@ -33,8 +32,8 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Timer { time }) => {
-            let timer = Timer::new(*time);
+        Some(Commands::Timer { duration }) => {
+            let timer = Timer::new(*duration);
             timer.countdown();
         }
         None => {
