@@ -18,14 +18,17 @@ impl Timer {
 
     pub fn countdown(&self) {
         while self.start.elapsed() <= self.duration {
-            print!("\r{}", self);
+            /* NOTE:
+            this does clear the line but not sure it's generic enough to use it.
+            I'm going to use ratatui so maybe it's better to not worry.
+            */
+            print!("\r\x1B[2K{}", self);
             io::stdout().flush().unwrap();
             thread::sleep(Duration::from_millis(1000));
         }
     }
 }
 
-// FIX: timer doesn't flush out correctly when it's more than an 1 day
 // TODO: handle singular/plural cases
 impl fmt::Display for Timer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
