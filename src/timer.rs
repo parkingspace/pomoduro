@@ -29,7 +29,6 @@ impl Timer {
     }
 }
 
-// TODO: handle singular/plural cases
 impl fmt::Display for Timer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let duration = (self.duration - self.start.elapsed()).as_secs();
@@ -50,10 +49,11 @@ impl fmt::Display for Timer {
                 let hours = (duration % 86400) / 3600;
                 let minutes = (duration % 3600) / 60;
                 let seconds = duration % 60;
+                let day_str = if days == 1 { "day" } else { "days" };
                 write!(
                     f,
-                    "{} days, {:02}:{:02}:{:02}",
-                    days, hours, minutes, seconds
+                    "{} {}, {:02}:{:02}:{:02}",
+                    days, day_str, hours, minutes, seconds
                 )
             }
         }
