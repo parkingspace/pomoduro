@@ -26,6 +26,11 @@ enum Commands {
         #[arg(value_parser = parse_duration, short, long)]
         duration: Duration,
     },
+
+    Start {
+        #[arg(value_parser = parse_duration, short, long)]
+        duration: Option<Duration>,
+    },
 }
 
 fn main() {
@@ -35,6 +40,15 @@ fn main() {
         Some(Commands::Timer { duration }) => {
             let timer = Timer::new(*duration);
             timer.countdown();
+        }
+        Some(Commands::Start { duration }) => {
+            let focus_duration = duration.unwrap_or(Duration::from_secs(5));
+            let focus_timer = Timer::new(focus_duration);
+            focus_timer.countdown();
+
+            let break_duration = Duration::from_secs(5);
+            let break_timer = Timer::new(break_duration);
+            break_timer.countdown();
         }
         None => {
             println!("No command provided");
