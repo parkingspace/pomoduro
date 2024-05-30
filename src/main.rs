@@ -1,14 +1,13 @@
-/*
-TODO:
-- Ratatui
-*/
 mod parser;
 mod timer;
+mod tui;
+mod ui;
 
+use crate::timer::Timer;
 use clap::{Parser, Subcommand};
 use parser::parse_duration;
+use std::io;
 use std::time::Duration;
-use timer::Timer;
 
 #[derive(Parser)]
 #[command(name = "Pomodoro Timer")]
@@ -33,25 +32,17 @@ enum Commands {
     },
 }
 
-fn main() {
+fn main() -> io::Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
         Some(Commands::Timer { duration }) => {
-            let timer = Timer::new(*duration);
-            timer.countdown();
-        }
-        Some(Commands::Start { duration }) => {
-            let focus_duration = duration.unwrap_or(Duration::from_secs(5));
-            let focus_timer = Timer::new(focus_duration);
-            focus_timer.countdown();
+            let mut timer = Timer::new(*duration);
+            timer.run(&mut tui::init()?)?;
+            tui::restore()?;
 
-            let break_duration = Duration::from_secs(5);
-            let break_timer = Timer::new(break_duration);
-            break_timer.countdown();
+            Ok(())
         }
-        None => {
-            println!("No command provided");
-        }
+        _ => Ok(()),
     }
 }
