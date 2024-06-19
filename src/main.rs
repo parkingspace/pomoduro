@@ -20,10 +20,23 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    #[command(about = "Start the timer")]
+    // TODO: short and long commands
+    #[command(about = "Start a timer")]
     Timer {
         #[arg(value_parser = parse_duration, short, long)]
         duration: Duration,
+    },
+
+    // TODO: handle default values
+    // TODO: short and long commands
+    #[command(about = "Start a pomodoro session", visible_alias = "p")]
+    Pomodoro {
+        #[arg(value_parser = parse_duration, short, long)]
+        sessions: Option<usize>,
+        #[arg(value_parser = parse_duration)]
+        focus_duration: Option<Duration>,
+        #[arg(value_parser = parse_duration)]
+        break_duration: Option<Duration>,
     },
 
     Start {
@@ -43,6 +56,13 @@ fn main() -> io::Result<()> {
 
             Ok(())
         }
-        _ => Ok(()),
+        _ => {
+            // TODO: replace timer with pomodoro
+            let mut timer = Timer::new(Duration::from_secs(60));
+            timer.run(&mut tui::init()?)?;
+            tui::restore()?;
+
+            Ok(())
+        }
     }
 }
