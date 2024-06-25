@@ -6,7 +6,7 @@ pub enum ParseTimeError {
     #[error("Time must be an integer")]
     IntError(#[from] ParseIntError),
 
-    #[error("Invalid unit format: {0}")]
+    #[error("Invalid unit format: `{0}`, Unit must be one of 'h', 'm', or 's'")]
     InvalidUnit(String),
 
     #[error("Invalid character in time format: {0}")]
