@@ -34,33 +34,40 @@ fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
 3. remaining
 */
 
-/* FIX: time(label) is not displayed correctly */
 pub fn render(f: &mut Frame, timer: &Timer) {
-    let area = f.size();
-    let ratio =
-        1.0 - (timer.get_remaining_time().as_secs_f64() / timer.get_duration().as_secs_f64());
+    if timer.is_done() {
+        f.render_widget(
+            Paragraph::new(timer.get_status().to_string())
+                .block(Block::default().borders(Borders::ALL)),
+            f.size(),
+        )
+    } else {
+        let area = f.size();
+        let ratio =
+            timer.get_elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64();
 
-    let label = format!("{}", timer.get_remaining_time().as_secs());
+        let label = format!("{}", ratio);
 
-    // Display remaining time using gauge widget
-    f.render_widget(
-        Gauge::default()
-            .block(Block::default().title("Remaining").borders(Borders::ALL))
-            .gauge_style(
-                Style::default()
-                    .fg(Color::White)
-                    .bg(Color::Black)
-                    .add_modifier(Modifier::ITALIC),
-            )
-            .label(Span::from(label))
-            .ratio(ratio),
-        centered_rect(area, 60, 50),
-    );
+        // Display remaining time using gauge widget
+        f.render_widget(
+            Gauge::default()
+                .block(Block::default().title("Remaining").borders(Borders::ALL))
+                .gauge_style(
+                    Style::default()
+                        .fg(Color::White)
+                        .bg(Color::Black)
+                        .add_modifier(Modifier::ITALIC),
+                )
+                .label(Span::from(label))
+                .ratio(ratio),
+            centered_rect(area, 60, 50),
+        );
 
-    // NOTE: This is just for debugging
-    // Display ratio
-    f.render_widget(
-        Paragraph::new(ratio.to_string()).block(Block::bordered()),
-        area,
-    )
+        // NOTE: This is just for debugging
+        // Display ratio
+        f.render_widget(
+            Paragraph::new(timer.get_status().to_string()).block(Block::bordered()),
+            area,
+        )
+    }
 }

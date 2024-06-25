@@ -37,6 +37,13 @@ impl Timer {
     pub fn run(&mut self, terminal: &mut tui::Tui) -> io::Result<()> {
         while self.get_status() != TimerStatus::Exit {
             terminal.draw(|f| ui::render(f, self))?;
+            if self.is_done() {
+                self.status = TimerStatus::Done;
+
+                // TODO: decide what to show when timer is done
+                println!("Timer is done");
+                break;
+            }
             // wait for 1 second
             if event::poll(Duration::from_millis(1000))? {
                 if let Event::Key(key) = event::read()? {
@@ -58,6 +65,10 @@ impl Timer {
         }
 
         Ok(())
+    }
+
+    pub fn get_elapsed_time(&self) -> Duration {
+        self.start.elapsed()
     }
 
     pub fn is_done(&self) -> bool {
@@ -104,6 +115,17 @@ impl fmt::Display for Timer {
                     days, day_str, hours, minutes, seconds
                 )
             }
+        }
+    }
+}
+
+impl fmt::Display for TimerStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TimerStatus::Running => write!(f, "Running"),
+            TimerStatus::Paused => write!(f, "Paused"),
+            TimerStatus::Done => write!(f, "Done"),
+            TimerStatus::Exit => write!(f, "Exit"),
         }
     }
 }
