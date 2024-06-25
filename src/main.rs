@@ -20,15 +20,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    // TODO: short and long commands
-    #[command(about = "Start a timer")]
+    #[command(about = "Start a timer", visible_alias = "t")]
     Timer {
         #[arg(value_parser = parse_duration, short, long)]
         duration: Duration,
     },
 
     // TODO: handle default values
-    // TODO: short and long commands
     #[command(about = "Start a pomodoro session", visible_alias = "p")]
     Pomodoro {
         #[arg(value_parser = parse_duration, short, long)]
