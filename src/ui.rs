@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::timer::Timer;
+use crate::timer::{Timer, TimerDisplay};
 
 fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
     let popup_layout = Layout::default()
@@ -28,12 +28,6 @@ fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
         .split(popup_layout[1])[1]
 }
 
-/* TODO: Add a way to change display style:
-1. percentage -> use ratio
-2. elapsed -> use elapsed time
-3. remaining -> timer.get_remaining_time()
-*/
-
 pub fn render(f: &mut Frame, timer: &Timer) {
     if timer.is_done() {
         f.render_widget(
@@ -46,7 +40,15 @@ pub fn render(f: &mut Frame, timer: &Timer) {
         let ratio =
             timer.get_elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64();
 
-        let label = format!("{}", timer);
+        // TODO: show correct time
+        let label = match timer.get_display() {
+            TimerDisplay::Remaining => format!("{}", timer),
+            TimerDisplay::Elapsed => format!("{}", timer.get_elapsed_time().as_secs_f64()),
+            TimerDisplay::Percentage => format!(
+                "{}",
+                timer.get_elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64()
+            ),
+        };
 
         // Display remaining time using gauge widget
         f.render_widget(

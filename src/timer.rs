@@ -17,6 +17,7 @@ pub struct Timer {
     status: TimerStatus,
     start: Instant,
     duration: Duration,
+    display: TimerDisplay,
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -33,12 +34,23 @@ enum TimerAction {
     Quit,
 }
 
+#[derive(Copy, Clone)]
+pub enum TimerDisplay {
+    Remaining,
+    Elapsed,
+    Percentage,
+}
+
 impl Timer {
     pub fn new(t: Duration) -> Self {
         Timer {
             start: Instant::now(),
             duration: t,
             status: TimerStatus::Running,
+            display: TimerDisplay::Remaining,
+        }
+    }
+
     fn handle_action(&mut self, key: KeyCode) {
         match key {
             KeyCode::Char('q') => {
@@ -50,6 +62,13 @@ impl Timer {
                 } else if self.status == TimerStatus::Paused {
                     self.status = TimerStatus::Running;
                 }
+            }
+            KeyCode::Char('t') => {
+                self.display = match self.display {
+                    TimerDisplay::Remaining => TimerDisplay::Elapsed,
+                    TimerDisplay::Elapsed => TimerDisplay::Percentage,
+                    TimerDisplay::Percentage => TimerDisplay::Remaining,
+                };
             }
             _ => {}
         }
@@ -100,6 +119,11 @@ impl Timer {
     pub fn get_duration(&self) -> Duration {
         self.duration
     }
+
+    pub fn get_display(&self) -> TimerDisplay {
+        self.display
+    }
+
     fn format_duration(&self, duration: u64) -> String {
         match duration {
             0..=3599 => {
