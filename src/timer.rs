@@ -5,6 +5,14 @@ use std::fmt;
 use std::io;
 use std::time::{Duration, Instant};
 
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum TimerError {
+    #[error("Elapsed time is greater than or equal to the duration")]
+    ElapsedExceedsDuration,
+}
+
 pub struct Timer {
     status: TimerStatus,
     start: Instant,
@@ -79,8 +87,11 @@ impl Timer {
         self.status
     }
 
-    pub fn get_remaining_time(&self) -> Duration {
-        self.duration.saturating_sub(self.start.elapsed())
+    pub fn get_remaining_time(&self) -> Result<u64, TimerError> {
+        self.duration
+            .as_secs()
+            .checked_sub(self.start.elapsed().as_secs())
+            .ok_or(TimerError::ElapsedExceedsDuration)
     }
 
     pub fn get_duration(&self) -> Duration {
@@ -90,31 +101,33 @@ impl Timer {
 
 impl fmt::Display for Timer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let duration = self.get_remaining_time().as_secs();
-        match duration {
-            0..=3599 => {
-                let minutes = (duration % 3600) / 60;
-                let seconds = duration % 60;
-                write!(f, "{:02}:{:02}", minutes, seconds)
-            }
-            3600..=86399 => {
-                let hours = duration / 3600;
-                let minutes = (duration % 3600) / 60;
-                let seconds = duration % 60;
-                write!(f, "{:02}:{:02}:{:02}", hours, minutes, seconds)
-            }
-            _ => {
-                let days = duration / 86400;
-                let hours = (duration % 86400) / 3600;
-                let minutes = (duration % 3600) / 60;
-                let seconds = duration % 60;
-                let day_str = if days == 1 { "day" } else { "days" };
-                write!(
-                    f,
-                    "{} {}, {:02}:{:02}:{:02}",
-                    days, day_str, hours, minutes, seconds
-                )
-            }
+        match self.get_remaining_time() {
+            Ok(duration) => match duration {
+                0..=3599 => {
+                    let minutes = (duration % 3600) / 60;
+                    let seconds = duration % 60;
+                    write!(f, "{:02}:{:02}", minutes, seconds)
+                }
+                3600..=86399 => {
+                    let hours = duration / 3600;
+                    let minutes = (duration % 3600) / 60;
+                    let seconds = duration % 60;
+                    write!(f, "{:02}:{:02}:{:02}", hours, minutes, seconds)
+                }
+                _ => {
+                    let days = duration / 86400;
+                    let hours = (duration % 86400) / 3600;
+                    let minutes = (duration % 3600) / 60;
+                    let seconds = duration % 60;
+                    let day_str = if days == 1 { "day" } else { "days" };
+                    write!(
+                        f,
+                        "{} {}, {:02}:{:02}:{:02}",
+                        days, day_str, hours, minutes, seconds
+                    )
+                }
+            },
+            Err(e) => write!(f, "{}", e),
         }
     }
 }
