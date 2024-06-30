@@ -97,36 +97,38 @@ impl Timer {
     pub fn get_duration(&self) -> Duration {
         self.duration
     }
+    fn format_duration(&self, duration: u64) -> String {
+        match duration {
+            0..=3599 => {
+                let minutes = (duration % 3600) / 60;
+                let seconds = duration % 60;
+                format!("{:02}:{:02}", minutes, seconds)
+            }
+            3600..=86399 => {
+                let hours = duration / 3600;
+                let minutes = (duration % 3600) / 60;
+                let seconds = duration % 60;
+                format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+            }
+            _ => {
+                let days = duration / 86400;
+                let hours = (duration % 86400) / 3600;
+                let minutes = (duration % 3600) / 60;
+                let seconds = duration % 60;
+                let day_str = if days == 1 { "day" } else { "days" };
+                format!(
+                    "{} {}, {:02}:{:02}:{:02}",
+                    days, day_str, hours, minutes, seconds
+                )
+            }
+        }
+    }
 }
 
 impl fmt::Display for Timer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.get_remaining_time() {
-            Ok(duration) => match duration {
-                0..=3599 => {
-                    let minutes = (duration % 3600) / 60;
-                    let seconds = duration % 60;
-                    write!(f, "{:02}:{:02}", minutes, seconds)
-                }
-                3600..=86399 => {
-                    let hours = duration / 3600;
-                    let minutes = (duration % 3600) / 60;
-                    let seconds = duration % 60;
-                    write!(f, "{:02}:{:02}:{:02}", hours, minutes, seconds)
-                }
-                _ => {
-                    let days = duration / 86400;
-                    let hours = (duration % 86400) / 3600;
-                    let minutes = (duration % 3600) / 60;
-                    let seconds = duration % 60;
-                    let day_str = if days == 1 { "day" } else { "days" };
-                    write!(
-                        f,
-                        "{} {}, {:02}:{:02}:{:02}",
-                        days, day_str, hours, minutes, seconds
-                    )
-                }
-            },
+            Ok(duration) => write!(f, "{}", self.format_duration(duration)),
             Err(e) => write!(f, "{}", e),
         }
     }
