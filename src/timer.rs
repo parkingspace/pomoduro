@@ -39,6 +39,19 @@ impl Timer {
             start: Instant::now(),
             duration: t,
             status: TimerStatus::Running,
+    fn handle_action(&mut self, key: KeyCode) {
+        match key {
+            KeyCode::Char('q') => {
+                self.status = TimerStatus::Exit;
+            }
+            KeyCode::Char('p') => {
+                if self.status == TimerStatus::Running {
+                    self.status = TimerStatus::Paused;
+                } else if self.status == TimerStatus::Paused {
+                    self.status = TimerStatus::Running;
+                }
+            }
+            _ => {}
         }
     }
 
@@ -55,18 +68,8 @@ impl Timer {
             // wait for 1 second
             if event::poll(Duration::from_millis(1000))? {
                 if let Event::Key(key) = event::read()? {
-                    if key.kind == event::KeyEventKind::Release {
-                        continue;
-                    }
-
-                    match key.code {
-                        KeyCode::Char('q') => {
-                            self.status = TimerStatus::Exit;
-                        }
-                        KeyCode::Char('p') => {
-                            self.status = TimerStatus::Paused;
-                        }
-                        _ => {}
+                    if key.kind == event::KeyEventKind::Press {
+                        self.handle_action(key.code);
                     }
                 }
             }
