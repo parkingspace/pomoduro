@@ -31,6 +31,7 @@ pub enum TimerStatus {
 enum TimerAction {
     Start,
     Pause,
+    ToggleDisplay,
     Quit,
 }
 
@@ -51,26 +52,36 @@ impl Timer {
         }
     }
 
-    fn handle_action(&mut self, key: KeyCode) {
+    fn key_to_action(key: KeyCode) -> Option<TimerAction> {
         match key {
-            KeyCode::Char('q') => {
-                self.status = TimerStatus::Exit;
-            }
-            KeyCode::Char('p') => {
+            KeyCode::Char('q') => Some(TimerAction::Quit),
+            KeyCode::Char('p') => Some(TimerAction::Pause),
+            KeyCode::Char('t') => Some(TimerAction::ToggleDisplay),
+            _ => None,
+        }
+    }
+
+    fn handle_action(&mut self, action: TimerAction) {
+        match action {
+            TimerAction::Quit => self.status = TimerStatus::Exit,
+            // TODO: add pause functionality
+            TimerAction::Pause => {
                 if self.status == TimerStatus::Running {
                     self.status = TimerStatus::Paused;
-                } else if self.status == TimerStatus::Paused {
+                }
+            }
+            TimerAction::Start => {
+                if self.status == TimerStatus::Paused {
                     self.status = TimerStatus::Running;
                 }
             }
-            KeyCode::Char('t') => {
+            TimerAction::ToggleDisplay => {
                 self.display = match self.display {
                     TimerDisplay::Remaining => TimerDisplay::Elapsed,
                     TimerDisplay::Elapsed => TimerDisplay::Percentage,
                     TimerDisplay::Percentage => TimerDisplay::Remaining,
                 };
             }
-            _ => {}
         }
     }
 
@@ -88,7 +99,9 @@ impl Timer {
             if event::poll(Duration::from_millis(1000))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == event::KeyEventKind::Press {
-                        self.handle_action(key.code);
+                        if let Some(action) = Self::key_to_action(key.code) {
+                            self.handle_action(action)
+                        }
                     }
                 }
             }
