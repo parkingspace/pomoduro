@@ -5,14 +5,6 @@ use std::fmt;
 use std::io;
 use std::time::{Duration, Instant};
 
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum TimerError {
-    #[error("Elapsed time is greater than or equal to the duration")]
-    ElapsedExceedsDuration,
-}
-
 pub struct Timer {
     status: TimerStatus,
     start: Instant,
@@ -110,23 +102,26 @@ impl Timer {
         Ok(())
     }
 
-    pub fn get_elapsed_time(&self) -> Duration {
-        self.start.elapsed()
+    pub fn elapsed_time(&self) -> Duration {
+        Instant::now().saturating_duration_since(self.start)
     }
 
     pub fn is_done(&self) -> bool {
-        self.start.elapsed() >= self.duration
+        self.elapsed_time() >= self.duration
     }
 
     pub fn get_status(&self) -> TimerStatus {
         self.status
     }
 
-    pub fn get_remaining_time(&self) -> Result<u64, TimerError> {
-        self.duration
-            .as_secs()
-            .checked_sub(self.start.elapsed().as_secs())
-            .ok_or(TimerError::ElapsedExceedsDuration)
+    pub fn remaining_time(&self) -> Duration {
+        let precise_remaining = self.duration.saturating_sub(self.elapsed_time());
+        if precise_remaining.is_zero() {
+            return Duration::ZERO;
+        }
+
+        // Round up for display: this is necessary because Duration includes fractional seconds
+        Duration::from_secs(precise_remaining.as_secs().saturating_add(1))
     }
 
     pub fn get_duration(&self) -> Duration {
@@ -137,24 +132,25 @@ impl Timer {
         self.display
     }
 
-    fn format_duration(&self, duration: u64) -> String {
-        match duration {
+    fn format_duration(&self, total_seconds: Duration) -> String {
+        let total_seconds = total_seconds.as_secs();
+        match total_seconds {
             0..=3599 => {
-                let minutes = (duration % 3600) / 60;
-                let seconds = duration % 60;
+                let minutes = (total_seconds % 3600) / 60;
+                let seconds = total_seconds % 60;
                 format!("{:02}:{:02}", minutes, seconds)
             }
             3600..=86399 => {
-                let hours = duration / 3600;
-                let minutes = (duration % 3600) / 60;
-                let seconds = duration % 60;
+                let hours = total_seconds / 3600;
+                let minutes = (total_seconds % 3600) / 60;
+                let seconds = total_seconds % 60;
                 format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
             }
             _ => {
-                let days = duration / 86400;
-                let hours = (duration % 86400) / 3600;
-                let minutes = (duration % 3600) / 60;
-                let seconds = duration % 60;
+                let days = total_seconds / 86400;
+                let hours = (total_seconds % 86400) / 3600;
+                let minutes = (total_seconds % 3600) / 60;
+                let seconds = total_seconds % 60;
                 let day_str = if days == 1 { "day" } else { "days" };
                 format!(
                     "{} {}, {:02}:{:02}:{:02}",
@@ -167,10 +163,7 @@ impl Timer {
 
 impl fmt::Display for Timer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.get_remaining_time() {
-            Ok(duration) => write!(f, "{}", self.format_duration(duration)),
-            Err(e) => write!(f, "{}", e),
-        }
+        write!(f, "{}", self.format_duration(self.remaining_time()))
     }
 }
 

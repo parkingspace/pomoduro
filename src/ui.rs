@@ -37,16 +37,15 @@ pub fn render(f: &mut Frame, timer: &Timer) {
         )
     } else {
         let area = f.size();
-        let ratio =
-            timer.get_elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64();
+        let ratio = timer.elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64();
 
         // TODO: show correct time
         let label = match timer.get_display() {
             TimerDisplay::Remaining => format!("{}", timer),
-            TimerDisplay::Elapsed => format!("{}", timer.get_elapsed_time().as_secs_f64()),
+            TimerDisplay::Elapsed => format!("{}", timer.elapsed_time().as_secs_f64()),
             TimerDisplay::Percentage => format!(
                 "{}",
-                timer.get_elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64()
+                timer.elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64()
             ),
         };
 
