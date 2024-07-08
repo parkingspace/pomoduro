@@ -77,18 +77,14 @@ impl Timer {
         }
     }
 
-    pub fn run(&mut self, terminal: &mut tui::Tui) -> io::Result<()> {
+    pub fn run(&mut self, terminal: &mut tui::Tui, tick_rate: Duration) -> io::Result<()> {
+        let mut last_tick = Instant::now();
+
         while self.get_status() != TimerStatus::Exit {
             terminal.draw(|f| ui::render(f, self))?;
-            if self.is_done() {
-                self.status = TimerStatus::Done;
 
-                // TODO: decide what to show when timer is done
-                println!("Timer is done");
-                break;
-            }
-            // wait for 1 second
-            if event::poll(Duration::from_millis(1000))? {
+            let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+            if event::poll(timeout)? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == event::KeyEventKind::Press {
                         if let Some(action) = Self::key_to_action(key.code) {
@@ -96,6 +92,15 @@ impl Timer {
                         }
                     }
                 }
+            }
+
+            if last_tick.elapsed() >= tick_rate {
+                // update the status: check if timer is done
+                if self.status == TimerStatus::Running && self.is_done() {
+                    self.status = TimerStatus::Done;
+                }
+
+                last_tick = Instant::now();
             }
         }
 

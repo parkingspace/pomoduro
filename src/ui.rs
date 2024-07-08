@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::timer::{Timer, TimerDisplay};
+use crate::timer::{Timer, TimerDisplay, TimerStatus};
 
 fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
     let popup_layout = Layout::default()
@@ -29,13 +29,15 @@ fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
 }
 
 pub fn render(f: &mut Frame, timer: &Timer) {
-    if timer.is_done() {
+    if timer.get_status() == TimerStatus::Done {
+        // Done UI:
         f.render_widget(
-            Paragraph::new(timer.get_status().to_string())
+            Paragraph::new("Timer is done! You made it!")
                 .block(Block::default().borders(Borders::ALL)),
             f.size(),
         )
     } else {
+        // Running UI:
         let area = f.size();
         let ratio = timer.elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64();
 

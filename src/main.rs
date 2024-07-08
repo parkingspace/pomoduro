@@ -45,11 +45,12 @@ enum Commands {
 
 fn main() -> io::Result<()> {
     let cli = Cli::parse();
+    let tick_rate = Duration::from_millis(250);
 
     match &cli.command {
         Some(Commands::Timer { duration }) => {
             let mut timer = Timer::new(*duration);
-            timer.run(&mut tui::init()?)?;
+            timer.run(&mut tui::init()?, tick_rate)?;
             tui::restore()?;
 
             Ok(())
@@ -57,7 +58,7 @@ fn main() -> io::Result<()> {
         _ => {
             // TODO: replace timer with pomodoro
             let mut timer = Timer::new(Duration::from_secs(60));
-            timer.run(&mut tui::init()?)?;
+            timer.run(&mut tui::init()?, tick_rate)?;
             tui::restore()?;
 
             Ok(())
