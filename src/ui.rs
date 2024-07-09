@@ -8,6 +8,8 @@ use ratatui::{
 
 use crate::timer::{Timer, TimerDisplay, TimerStatus};
 
+// TODO: UI FOR POMODORO SESSIONS!
+
 fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)

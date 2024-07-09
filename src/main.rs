@@ -1,8 +1,10 @@
 mod parser;
+mod pomodoro;
 mod timer;
 mod tui;
 mod ui;
 
+use crate::pomodoro::Pomodoro;
 use crate::timer::Timer;
 use clap::{Parser, Subcommand};
 use parser::parse_duration;
@@ -29,7 +31,7 @@ enum Commands {
     // TODO: handle default values
     #[command(about = "Start a pomodoro session", visible_alias = "p")]
     Pomodoro {
-        #[arg(value_parser = parse_duration, short, long)]
+        #[arg(short, long)]
         sessions: Option<usize>,
         #[arg(value_parser = parse_duration)]
         focus_duration: Option<Duration>,
@@ -55,8 +57,22 @@ fn main() -> io::Result<()> {
 
             Ok(())
         }
+        Some(Commands::Pomodoro {
+            sessions,
+            focus_duration,
+            break_duration,
+        }) => {
+            let sessions = sessions.unwrap_or(4);
+            let focus_duration = focus_duration.unwrap_or(Duration::from_secs(25));
+            let break_duration = break_duration.unwrap_or(Duration::from_secs(5));
+
+            let mut pomodoro = Pomodoro::new(sessions, focus_duration, break_duration);
+            pomodoro.run(&mut tui::init()?, tick_rate)?;
+            tui::restore()?;
+
+            Ok(())
+        }
         _ => {
-            // TODO: replace timer with pomodoro
             let mut timer = Timer::new(Duration::from_secs(60));
             timer.run(&mut tui::init()?, tick_rate)?;
             tui::restore()?;
