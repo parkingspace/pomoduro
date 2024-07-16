@@ -34,6 +34,14 @@ impl Timer {
         }
     }
 
+    // TODO: handle <C-c>
+    /*
+            KeyCode::Char('c') | KeyCode::Char('C') => {
+            if key_event.modifiers == KeyModifiers::CONTROL {
+                app.quit();
+            }
+        }
+    */
     fn key_to_action(key: KeyCode) -> Option<TimerAction> {
         match key {
             KeyCode::Char('q') => Some(TimerAction::Quit),
@@ -115,31 +123,35 @@ impl Timer {
         self.duration
     }
 
-
-    fn format_duration(&self, total_seconds: Duration) -> String {
+    pub fn format_duration(&self, total_seconds: Duration) -> String {
         let total_seconds = total_seconds.as_secs();
         match total_seconds {
             0..=3599 => {
                 let minutes = (total_seconds % 3600) / 60;
                 let seconds = total_seconds % 60;
-                format!("{:02}:{:02}", minutes, seconds)
+
+                match minutes {
+                    0 => format!("{}s", seconds),
+                    _ => format!("{}m {}s", minutes, seconds),
+                }
             }
             3600..=86399 => {
                 let hours = total_seconds / 3600;
                 let minutes = (total_seconds % 3600) / 60;
                 let seconds = total_seconds % 60;
-                format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+
+                match hours {
+                    0 => format!("{}m {}s", minutes, seconds),
+                    _ => format!("{}h {}m {}s", hours, minutes, seconds),
+                }
             }
             _ => {
                 let days = total_seconds / 86400;
                 let hours = (total_seconds % 86400) / 3600;
                 let minutes = (total_seconds % 3600) / 60;
                 let seconds = total_seconds % 60;
-                let day_str = if days == 1 { "day" } else { "days" };
-                format!(
-                    "{} {}, {:02}:{:02}:{:02}",
-                    days, day_str, hours, minutes, seconds
-                )
+
+                format!("{}d {}h {}m {}s", days, hours, minutes, seconds)
             }
         }
     }

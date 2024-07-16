@@ -1,7 +1,6 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::Span,
     widgets::{Block, Borders, Gauge, Paragraph},
     Frame,
 };
@@ -9,27 +8,6 @@ use ratatui::{
 use crate::timer::{Timer, TimerStatus};
 
 // TODO: UI FOR POMODORO SESSIONS!
-
-fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y) / 2),
-        ])
-        .split(r);
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((100 - percent_x) / 2),
-        ])
-        .split(popup_layout[1])[1]
-}
-
 pub fn render(f: &mut Frame, timer: &Timer) {
     if timer.get_status() == TimerStatus::Done {
         // Done UI:
@@ -41,38 +19,49 @@ pub fn render(f: &mut Frame, timer: &Timer) {
     } else {
         // Running UI:
         let area = f.size();
+        // TODO: check if this computation is safe
         let ratio = timer.elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64();
 
-        // TODO: show correct time
-        let label = match timer.get_display() {
-            TimerDisplay::Remaining => format!("{}", timer),
-            TimerDisplay::Elapsed => format!("{}", timer.elapsed_time().as_secs_f64()),
-            TimerDisplay::Percentage => format!(
-                "{}",
-                timer.elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64()
-            ),
-        };
+        // let (title, label) = match timer.get_display() {
+        //     TimerDisplay::Remaining => ("Remaining", timer.to_string()),
+        //     TimerDisplay::Elapsed => (
+        //         "Elapsed",
+        //         timer.format_duration(timer.elapsed_time()).to_string(),
+        //     ),
+        //     TimerDisplay::Percentage => (
+        //         "Progress",
+        //         format!(
+        //             "{:.2}%",
+        //             timer.elapsed_time().as_secs_f32() / timer.get_duration().as_secs_f32() * 100.0
+        //         ),
+        //     ),
+        // };
 
-        // Display remaining time using gauge widget
-        f.render_widget(
-            Gauge::default()
-                .block(Block::default().title("Remaining").borders(Borders::ALL))
-                .gauge_style(
-                    Style::default()
-                        .fg(Color::White)
-                        .bg(Color::Black)
-                        .add_modifier(Modifier::ITALIC),
-                )
-                .label(Span::from(label))
-                .ratio(ratio),
-            centered_rect(area, 60, 50),
-        );
+        let label = timer.to_string();
 
-        // NOTE: This is just for debugging
-        // Display ratio
-        f.render_widget(
-            Paragraph::new(timer.get_status().to_string()).block(Block::bordered()),
-            area,
-        )
+        let progress = Gauge::default()
+            .block(Block::bordered().title("My Timer"))
+            .gauge_style(
+                Style::default()
+                    .fg(Color::Magenta)
+                    .bg(Color::Black)
+                    .add_modifier(Modifier::ITALIC | Modifier::BOLD),
+            )
+            .use_unicode(true)
+            .label(label)
+            .ratio(ratio);
+
+        let vertical_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3)])
+            .horizontal_margin(1)
+            .split(area);
+
+        let horizontal_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Ratio(2, 3)])
+            .split(vertical_layout[0]);
+
+        f.render_widget(progress, horizontal_layout[0]);
     }
 }
