@@ -9,6 +9,7 @@ pub struct Timer {
     status: TimerStatus,
     start: Instant,
     duration: Duration,
+    name: String,
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -26,11 +27,12 @@ enum TimerAction {
 }
 
 impl Timer {
-    pub fn new(t: Duration) -> Self {
+    pub fn new(t: Duration, name: String) -> Self {
         Timer {
             start: Instant::now(),
             duration: t,
             status: TimerStatus::Running,
+            name,
         }
     }
 
@@ -121,6 +123,10 @@ impl Timer {
 
     pub fn get_duration(&self) -> Duration {
         self.duration
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
     }
 
     pub fn format_duration(&self, total_seconds: Duration) -> String {

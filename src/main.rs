@@ -29,9 +29,10 @@ enum Commands {
     Timer {
         #[arg(value_parser = parse_duration, short, long)]
         duration: Duration,
+        #[arg(short, long)]
+        name: Option<String>,
     },
 
-    // TODO: handle default values
     #[command(about = "Start a pomodoro session", visible_alias = "p")]
     Pomodoro {
         #[arg(short, long)]
@@ -48,8 +49,9 @@ fn main() -> io::Result<()> {
     let tick_rate = Duration::from_millis(250);
 
     match &cli.command {
-        Some(Commands::Timer { duration }) => {
-            let mut timer = Timer::new(*duration);
+        Some(Commands::Timer { duration, name }) => {
+            let name = name.as_ref().unwrap_or(&String::from("Timer")).to_string();
+            let mut timer = Timer::new(*duration, name);
             timer.run(&mut tui::init()?, tick_rate)?;
             tui::restore()?;
 
@@ -71,7 +73,7 @@ fn main() -> io::Result<()> {
             Ok(())
         }
         _ => {
-            let mut timer = Timer::new(Duration::from_secs(60));
+            let mut timer = Timer::new(Duration::from_secs(60), String::from("Timer"));
             timer.run(&mut tui::init()?, tick_rate)?;
             tui::restore()?;
 

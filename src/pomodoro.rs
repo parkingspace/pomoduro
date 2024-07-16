@@ -23,7 +23,7 @@ impl Pomodoro {
             focus_duration,
             break_duration,
             is_focus: true,
-            timer: Timer::new(focus_duration),
+            timer: Timer::new(focus_duration, String::from("Focus")),
         }
     }
 
@@ -37,11 +37,11 @@ impl Pomodoro {
                 // focus
                 if self.is_focus {
                     self.is_focus = false;
-                    self.timer = Timer::new(self.break_duration);
+                    self.timer = Timer::new(self.break_duration, String::from("Break"));
                 } else {
                     // break
                     self.is_focus = true;
-                    self.timer = Timer::new(self.focus_duration);
+                    self.timer = Timer::new(self.focus_duration, String::from("Focus"));
                     self.current_session += 1;
                 }
             }

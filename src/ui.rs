@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Gauge, Paragraph},
+    widgets::{Block, BorderType, Borders, Gauge, Paragraph},
     Frame,
 };
 
@@ -22,25 +22,14 @@ pub fn render(f: &mut Frame, timer: &Timer) {
         // TODO: check if this computation is safe
         let ratio = timer.elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64();
 
-        // let (title, label) = match timer.get_display() {
-        //     TimerDisplay::Remaining => ("Remaining", timer.to_string()),
-        //     TimerDisplay::Elapsed => (
-        //         "Elapsed",
-        //         timer.format_duration(timer.elapsed_time()).to_string(),
-        //     ),
-        //     TimerDisplay::Percentage => (
-        //         "Progress",
-        //         format!(
-        //             "{:.2}%",
-        //             timer.elapsed_time().as_secs_f32() / timer.get_duration().as_secs_f32() * 100.0
-        //         ),
-        //     ),
-        // };
-
         let label = timer.to_string();
 
         let progress = Gauge::default()
-            .block(Block::bordered().title("My Timer"))
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title(timer.get_name()),
+            )
             .gauge_style(
                 Style::default()
                     .fg(Color::Magenta)
