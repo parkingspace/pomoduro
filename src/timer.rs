@@ -1,5 +1,6 @@
 use crate::tui;
 use crate::ui;
+use crossterm::event::KeyModifiers;
 use crossterm::event::{self, Event, KeyCode};
 use std::fmt;
 use std::io;
@@ -36,16 +37,11 @@ impl Timer {
         }
     }
 
-    // TODO: handle <C-c>
-    /*
-            KeyCode::Char('c') | KeyCode::Char('C') => {
-            if key_event.modifiers == KeyModifiers::CONTROL {
-                app.quit();
-            }
-        }
-    */
-    fn key_to_action(key: KeyCode) -> Option<TimerAction> {
+    fn key_to_action(key: KeyCode, modifiers: KeyModifiers) -> Option<TimerAction> {
         match key {
+            KeyCode::Char('c') | KeyCode::Char('C') if modifiers == KeyModifiers::CONTROL => {
+                Some(TimerAction::Quit)
+            }
             KeyCode::Char('q') => Some(TimerAction::Quit),
             KeyCode::Char('p') => Some(TimerAction::Pause),
             _ => None,
@@ -79,7 +75,7 @@ impl Timer {
             if event::poll(timeout)? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == event::KeyEventKind::Press {
-                        if let Some(action) = Self::key_to_action(key.code) {
+                        if let Some(action) = Self::key_to_action(key.code, key.modifiers) {
                             self.handle_action(action)
                         }
                     }
