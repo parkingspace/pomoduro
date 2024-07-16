@@ -9,7 +9,6 @@ pub struct Timer {
     status: TimerStatus,
     start: Instant,
     duration: Duration,
-    display: TimerDisplay,
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -23,15 +22,7 @@ pub enum TimerStatus {
 enum TimerAction {
     Start,
     Pause,
-    ToggleDisplay,
     Quit,
-}
-
-#[derive(Copy, Clone)]
-pub enum TimerDisplay {
-    Remaining,
-    Elapsed,
-    Percentage,
 }
 
 impl Timer {
@@ -40,7 +31,6 @@ impl Timer {
             start: Instant::now(),
             duration: t,
             status: TimerStatus::Running,
-            display: TimerDisplay::Remaining,
         }
     }
 
@@ -48,7 +38,6 @@ impl Timer {
         match key {
             KeyCode::Char('q') => Some(TimerAction::Quit),
             KeyCode::Char('p') => Some(TimerAction::Pause),
-            KeyCode::Char('t') => Some(TimerAction::ToggleDisplay),
             _ => None,
         }
     }
@@ -66,13 +55,6 @@ impl Timer {
                 if self.status == TimerStatus::Paused {
                     self.status = TimerStatus::Running;
                 }
-            }
-            TimerAction::ToggleDisplay => {
-                self.display = match self.display {
-                    TimerDisplay::Remaining => TimerDisplay::Elapsed,
-                    TimerDisplay::Elapsed => TimerDisplay::Percentage,
-                    TimerDisplay::Percentage => TimerDisplay::Remaining,
-                };
             }
         }
     }
@@ -133,9 +115,6 @@ impl Timer {
         self.duration
     }
 
-    pub fn get_display(&self) -> TimerDisplay {
-        self.display
-    }
 
     fn format_duration(&self, total_seconds: Duration) -> String {
         let total_seconds = total_seconds.as_secs();

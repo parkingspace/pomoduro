@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::timer::{Timer, TimerDisplay, TimerStatus};
+use crate::timer::{Timer, TimerStatus};
 
 // TODO: UI FOR POMODORO SESSIONS!
 
