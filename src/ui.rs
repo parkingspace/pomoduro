@@ -5,11 +5,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::timer::{Timer, TimerStatus};
+use crate::timer::{Timer, TimerStatus, TimerType};
 
-// TODO: UI FOR POMODORO SESSIONS!
 pub fn render(f: &mut Frame, timer: &Timer) {
-    if timer.get_status() == TimerStatus::Done {
+    if timer.get_status() == TimerStatus::Done && timer.get_timer_type() == TimerType::Single {
         // Done UI:
         f.render_widget(
             Paragraph::new("Timer is done! You made it!")
@@ -19,9 +18,9 @@ pub fn render(f: &mut Frame, timer: &Timer) {
     } else {
         // Running UI:
         let area = f.size();
-        // TODO: check if this computation is safe
-        let ratio = timer.elapsed_time().as_secs_f64().floor() / timer.get_duration().as_secs_f64();
-
+        let ratio = (timer.elapsed_time().as_secs_f64().floor()
+            / timer.get_duration().as_secs_f64())
+        .min(1.0);
         let label = timer.to_string();
 
         let progress = Gauge::default()

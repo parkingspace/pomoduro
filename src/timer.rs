@@ -6,11 +6,18 @@ use std::fmt;
 use std::io;
 use std::time::{Duration, Instant};
 
+#[derive(PartialEq, Copy, Clone)]
+pub enum TimerType {
+    Single,
+    Pomodoro,
+}
+
 pub struct Timer {
     status: TimerStatus,
     start: Instant,
     duration: Duration,
     name: String,
+    timer_type: TimerType,
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -28,12 +35,13 @@ enum TimerAction {
 }
 
 impl Timer {
-    pub fn new(t: Duration, name: String) -> Self {
+    pub fn new(t: Duration, name: String, timer_type: TimerType) -> Self {
         Timer {
             start: Instant::now(),
             duration: t,
             status: TimerStatus::Running,
             name,
+            timer_type,
         }
     }
 
@@ -86,6 +94,9 @@ impl Timer {
                 // update the status: check if timer is done
                 if self.status == TimerStatus::Running && self.is_done() {
                     self.status = TimerStatus::Done;
+                    // if self.timer_type == TimerType::Pomodoro {
+                    break;
+                    // }
                 }
 
                 last_tick = Instant::now();
@@ -123,6 +134,10 @@ impl Timer {
 
     pub fn get_name(&self) -> &str {
         &self.name
+    }
+
+    pub fn get_timer_type(&self) -> TimerType {
+        self.timer_type
     }
 
     pub fn format_duration(&self, total_seconds: Duration) -> String {

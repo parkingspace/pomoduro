@@ -2,11 +2,13 @@ use std::io;
 use std::time::Duration;
 
 use crate::{
-    timer::{Timer, TimerStatus},
+    timer::{Timer, TimerStatus, TimerType},
     tui,
 };
 
+#[derive(PartialEq)]
 enum PomodoroState {
+    Ready,
     Focus(usize),
     Break(usize),
     Completed,
@@ -22,7 +24,7 @@ pub struct Pomodoro {
 impl Pomodoro {
     pub fn new(total_sessions: usize, focus_duration: Duration, break_duration: Duration) -> Self {
         Pomodoro {
-            state: PomodoroState::Focus(1),
+            state: PomodoroState::Ready,
             focus_duration,
             break_duration,
             total_sessions,
@@ -31,18 +33,38 @@ impl Pomodoro {
 
     pub fn next_timer(&mut self) -> Option<Timer> {
         match self.state {
+            PomodoroState::Ready => {
+                self.state = PomodoroState::Focus(1);
+                Some(Timer::new(
+                    self.focus_duration,
+                    "Focus".to_string(),
+                    TimerType::Pomodoro,
+                ))
+            }
             PomodoroState::Focus(session) if session <= self.total_sessions => {
-                self.state = PomodoroState::Break(session + 1);
-                Some(Timer::new(self.break_duration, "Break".to_string()))
+                self.state = PomodoroState::Break(session);
+                Some(Timer::new(
+                    self.break_duration,
+                    "Break".to_string(),
+                    TimerType::Pomodoro,
+                ))
             }
             PomodoroState::Break(session) if session < self.total_sessions => {
                 self.state = PomodoroState::Focus(session + 1);
-                Some(Timer::new(self.focus_duration, "Focus".to_string()))
+                Some(Timer::new(
+                    self.focus_duration,
+                    "Focus".to_string(),
+                    TimerType::Pomodoro,
+                ))
             }
             // TODO: this should be long break
             PomodoroState::Break(session) if session == self.total_sessions => {
                 self.state = PomodoroState::Completed;
-                Some(Timer::new(self.break_duration, "Long Break".to_string()))
+                Some(Timer::new(
+                    self.break_duration,
+                    "Long Break".to_string(),
+                    TimerType::Pomodoro,
+                ))
             }
             PomodoroState::Completed => None,
             _ => None,
