@@ -13,6 +13,7 @@ use std::time::Duration;
 
 const FOCUS_DURATION: u64 = 25;
 const BREAK_DURATION: u64 = 5;
+const LONG_BREAK_DURATION: u64 = 15;
 
 #[derive(Parser)]
 #[command(name = "Pomodoro Timer")]
@@ -41,6 +42,8 @@ enum Commands {
         focus_duration: Option<Duration>,
         #[arg(short, long="break", value_parser = parse_duration)]
         break_duration: Option<Duration>,
+        #[arg(short, long="long", value_parser = parse_duration)]
+        long_break_duration: Option<Duration>,
     },
 }
 
@@ -62,12 +65,20 @@ fn main() -> io::Result<()> {
             sessions,
             focus_duration,
             break_duration,
+            long_break_duration,
         }) => {
             let total_sessions = sessions.unwrap_or(4);
             let focus_duration = focus_duration.unwrap_or(Duration::from_secs(FOCUS_DURATION));
             let break_duration = break_duration.unwrap_or(Duration::from_secs(BREAK_DURATION));
+            let long_break_duration =
+                long_break_duration.unwrap_or(Duration::from_secs(LONG_BREAK_DURATION));
 
-            let mut pomodoro = Pomodoro::new(total_sessions, focus_duration, break_duration);
+            let mut pomodoro = Pomodoro::new(
+                total_sessions,
+                focus_duration,
+                break_duration,
+                long_break_duration,
+            );
             pomodoro.run(&mut tui::init()?, tick_rate)?;
             tui::restore()?;
 

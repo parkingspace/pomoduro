@@ -11,6 +11,7 @@ enum PomodoroState {
     Ready,
     Focus(usize),
     Break(usize),
+    LongBreak(usize),
     Completed,
 }
 
@@ -18,15 +19,22 @@ pub struct Pomodoro {
     state: PomodoroState,
     focus_duration: Duration,
     break_duration: Duration,
+    long_break_duration: Duration,
     total_sessions: usize,
 }
 
 impl Pomodoro {
-    pub fn new(total_sessions: usize, focus_duration: Duration, break_duration: Duration) -> Self {
+    pub fn new(
+        total_sessions: usize,
+        focus_duration: Duration,
+        break_duration: Duration,
+        long_break_duration: Duration,
+    ) -> Self {
         Pomodoro {
             state: PomodoroState::Ready,
             focus_duration,
             break_duration,
+            long_break_duration,
             total_sessions,
         }
     }
@@ -57,14 +65,17 @@ impl Pomodoro {
                     TimerType::Pomodoro,
                 ))
             }
-            // TODO: this should be long break
             PomodoroState::Break(session) if session == self.total_sessions => {
-                self.state = PomodoroState::Completed;
+                self.state = PomodoroState::LongBreak(session);
                 Some(Timer::new(
-                    self.break_duration,
+                    self.long_break_duration,
                     "Long Break".to_string(),
                     TimerType::Pomodoro,
                 ))
+            }
+            PomodoroState::LongBreak(_) => {
+                self.state = PomodoroState::Completed;
+                None
             }
             PomodoroState::Completed => None,
             _ => None,
