@@ -1,13 +1,13 @@
+mod cli;
 mod parser;
 mod pomodoro;
 mod timer;
 mod tui;
 mod ui;
 
+use crate::cli::Commands;
 use crate::pomodoro::Pomodoro;
 use crate::timer::{Timer, TimerType};
-use clap::{Parser, Subcommand};
-use parser::parse_duration;
 use std::io;
 use std::time::Duration;
 
@@ -15,40 +15,8 @@ const FOCUS_DURATION: u64 = 25;
 const BREAK_DURATION: u64 = 5;
 const LONG_BREAK_DURATION: u64 = 15;
 
-#[derive(Parser)]
-#[command(name = "Pomodoro Timer")]
-#[command(version = "0.1")]
-#[command(about = "Pomodoro Timer", long_about = None)]
-struct Cli {
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    #[command(about = "Start a timer", visible_alias = "t")]
-    Timer {
-        #[arg(value_parser = parse_duration, short, long)]
-        duration: Duration,
-        #[arg(short, long)]
-        name: Option<String>,
-    },
-
-    #[command(about = "Start a pomodoro session", visible_alias = "p")]
-    Pomodoro {
-        #[arg(short, long)]
-        sessions: Option<usize>,
-        #[arg(short, long="focus", value_parser = parse_duration)]
-        focus_duration: Option<Duration>,
-        #[arg(short, long="break", value_parser = parse_duration)]
-        break_duration: Option<Duration>,
-        #[arg(short, long="long", value_parser = parse_duration)]
-        long_break_duration: Option<Duration>,
-    },
-}
-
 fn main() -> io::Result<()> {
-    let cli = Cli::parse();
+    let cli = cli::parse();
     let tick_rate = Duration::from_millis(250);
 
     match &cli.command {
@@ -60,7 +28,6 @@ fn main() -> io::Result<()> {
 
             Ok(())
         }
-        // TODO: add long break
         Some(Commands::Pomodoro {
             sessions,
             focus_duration,
