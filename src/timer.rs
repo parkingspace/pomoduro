@@ -1,9 +1,6 @@
-use crate::tui;
-use crate::ui;
+use crossterm::event::KeyCode;
 use crossterm::event::KeyModifiers;
-use crossterm::event::{self, Event, KeyCode};
 use std::fmt;
-use std::io;
 use std::time::{Duration, Instant};
 
 #[derive(PartialEq, Copy, Clone)]
@@ -12,6 +9,7 @@ pub enum TimerType {
     Pomodoro,
 }
 
+#[derive(Clone)]
 pub struct Timer {
     status: TimerStatus,
     start: Instant,
@@ -24,11 +22,11 @@ pub struct Timer {
 pub enum TimerStatus {
     Running,
     Paused,
-    Done,
-    Exit,
+    Done, // when single timer is done
+    Exit, // when the program is exited
 }
 
-enum TimerAction {
+pub enum TimerAction {
     Start,
     Pause,
     Quit,
@@ -73,38 +71,38 @@ impl Timer {
         }
     }
 
-    pub fn run(&mut self, terminal: &mut tui::Tui, tick_rate: Duration) -> io::Result<()> {
-        let mut last_tick = Instant::now();
-
-        while self.get_status() != TimerStatus::Exit {
-            terminal.draw(|f| ui::render(f, self))?;
-
-            let timeout = tick_rate.saturating_sub(last_tick.elapsed());
-            if event::poll(timeout)? {
-                if let Event::Key(key) = event::read()? {
-                    if key.kind == event::KeyEventKind::Press {
-                        if let Some(action) = Self::key_to_action(key.code, key.modifiers) {
-                            self.handle_action(action)
-                        }
-                    }
-                }
-            }
-
-            if last_tick.elapsed() >= tick_rate {
-                // update the status: check if timer is done
-                if self.status == TimerStatus::Running && self.is_done() {
-                    self.status = TimerStatus::Done;
-                    // if self.timer_type == TimerType::Pomodoro {
-                    break;
-                    // }
-                }
-
-                last_tick = Instant::now();
-            }
-        }
-
-        Ok(())
-    }
+    // pub fn run(&mut self, terminal: &mut tui::Tui, tick_rate: Duration) -> io::Result<()> {
+    //     let mut last_tick = Instant::now();
+    //
+    //     while self.get_status() != TimerStatus::Exit {
+    //         terminal.draw(|f| ui::render(f, self))?;
+    //
+    //         let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+    //         if event::poll(timeout)? {
+    //             if let Event::Key(key) = event::read()? {
+    //                 if key.kind == event::KeyEventKind::Press {
+    //                     if let Some(action) = Self::key_to_action(key.code, key.modifiers) {
+    //                         self.handle_action(action)
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //
+    //         if last_tick.elapsed() >= tick_rate {
+    //             // update the status: check if timer is done
+    //             if self.status == TimerStatus::Running && self.is_done() {
+    //                 self.status = TimerStatus::Done;
+    //                 // if self.timer_type == TimerType::Pomodoro {
+    //                 break;
+    //                 // }
+    //             }
+    //
+    //             last_tick = Instant::now();
+    //         }
+    //     }
+    //
+    //     Ok(())
+    // }
 
     pub fn elapsed_time(&self) -> Duration {
         Instant::now().saturating_duration_since(self.start)
@@ -116,6 +114,10 @@ impl Timer {
 
     pub fn get_status(&self) -> TimerStatus {
         self.status
+    }
+
+    pub fn set_status(&mut self, status: TimerStatus) {
+        self.status = status
     }
 
     pub fn remaining_time(&self) -> Duration {
