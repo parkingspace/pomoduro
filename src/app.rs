@@ -29,9 +29,7 @@ impl TimerSession {
 
 impl Session for TimerSession {
     fn tick(&mut self) {
-        if self.timer.get_status() == TimerStatus::Running && self.timer.is_done() {
-            self.timer.set_status(TimerStatus::Exit);
-        }
+        self.timer.tick();
     }
 
     fn is_finished(&self) -> bool {
@@ -39,11 +37,7 @@ impl Session for TimerSession {
     }
 
     fn toggle_pause(&mut self) {
-        if self.timer.get_status() == TimerStatus::Running {
-            self.timer.set_status(TimerStatus::Paused)
-        } else if self.timer.get_status() == TimerStatus::Paused {
-            self.timer.set_status(TimerStatus::Running)
-        }
+        self.timer.toggle_pause();
     }
 
     fn get_timer(&mut self) -> Option<&mut Timer> {
@@ -205,16 +199,8 @@ impl App {
 
         match action {
             TimerAction::Quit => timer.set_status(TimerStatus::Exit),
-            // TODO: add pause functionality
             TimerAction::Pause => {
-                if timer.get_status() == TimerStatus::Running {
-                    timer.set_status(TimerStatus::Paused);
-                }
-            }
-            TimerAction::Start => {
-                if timer.get_status() == TimerStatus::Paused {
-                    timer.set_status(TimerStatus::Running);
-                }
+                self.session.toggle_pause();
             }
         }
     }

@@ -4,7 +4,8 @@ use std::time::{Duration, Instant};
 #[derive(Clone)]
 pub struct Timer {
     status: TimerStatus,
-    start: Instant,
+    started_at: Instant,
+    elapsed: Duration,
     duration: Duration,
     name: String,
 }
@@ -18,7 +19,6 @@ pub enum TimerStatus {
 }
 
 pub enum TimerAction {
-    Start,
     Pause,
     Quit,
 }
@@ -26,15 +26,40 @@ pub enum TimerAction {
 impl Timer {
     pub fn new(t: Duration, name: String) -> Self {
         Timer {
-            start: Instant::now(),
+            started_at: Instant::now(),
+            elapsed: Duration::ZERO,
             duration: t,
             status: TimerStatus::Running,
             name,
         }
     }
 
+    pub fn tick(&mut self) {
+        if self.status == TimerStatus::Running && self.is_done() {
+            self.status = TimerStatus::Exit;
+        }
+    }
+
     pub fn elapsed_time(&self) -> Duration {
-        Instant::now().saturating_duration_since(self.start)
+        match self.status {
+            TimerStatus::Running => self.elapsed + self.started_at.elapsed(),
+            TimerStatus::Paused | TimerStatus::Done => self.elapsed,
+            _ => self.elapsed,
+        }
+    }
+
+    pub fn toggle_pause(&mut self) {
+        match self.status {
+            TimerStatus::Running => {
+                self.elapsed += self.started_at.elapsed();
+                self.status = TimerStatus::Paused;
+            }
+            TimerStatus::Paused => {
+                self.started_at = Instant::now();
+                self.status = TimerStatus::Running;
+            }
+            _ => {}
+        }
     }
 
     pub fn is_done(&self) -> bool {
