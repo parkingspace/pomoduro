@@ -15,19 +15,19 @@ pub trait Session {
     fn get_timer(&mut self) -> Option<&mut Timer>;
 }
 
-pub struct TimerMode {
+pub struct TimerSession {
     timer: Timer,
 }
 
-impl TimerMode {
+impl TimerSession {
     fn new(duration: Duration, name: String) -> Self {
-        TimerMode {
+        TimerSession {
             timer: Timer::new(duration, name),
         }
     }
 }
 
-impl Session for TimerMode {
+impl Session for TimerSession {
     fn tick(&mut self) {
         if self.timer.get_status() == TimerStatus::Running && self.timer.is_done() {
             self.timer.set_status(TimerStatus::Exit);
@@ -51,12 +51,12 @@ impl Session for TimerMode {
     }
 }
 
-pub struct PomodoroMode {
+pub struct PomodoroSession {
     pomodoro: Pomodoro,
     current_timer: Option<Timer>,
 }
 
-impl PomodoroMode {
+impl PomodoroSession {
     fn new(
         total_sessions: usize,
         focus_duration: Duration,
@@ -74,14 +74,14 @@ impl PomodoroMode {
             first_timer,
         );
 
-        PomodoroMode {
+        PomodoroSession {
             pomodoro,
             current_timer: Some(current_timer),
         }
     }
 }
 
-impl Session for PomodoroMode {
+impl Session for PomodoroSession {
     fn tick(&mut self) {
         if let Some(timer) = &mut self.current_timer {
             if timer.get_status() == TimerStatus::Exit {
@@ -125,7 +125,7 @@ pub enum Mode {
 impl App {
     pub fn new_timer(duration: Duration, name: String, tick_rate: Duration) -> Self {
         App {
-            session: Box::new(TimerMode::new(duration, name)),
+            session: Box::new(TimerSession::new(duration, name)),
             tick_rate,
             mode: Mode::Timer,
         }
@@ -139,7 +139,7 @@ impl App {
         tick_rate: Duration,
     ) -> Self {
         App {
-            session: Box::new(PomodoroMode::new(
+            session: Box::new(PomodoroSession::new(
                 total_sessions,
                 focus_duration,
                 break_duration,
