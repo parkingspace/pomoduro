@@ -2,7 +2,7 @@ use crossterm::event::KeyModifiers;
 use crossterm::event::{self, Event, KeyCode};
 
 use crate::pomodoro::{Pomodoro, PomodoroState};
-use crate::timer::{Timer, TimerAction, TimerStatus, TimerType};
+use crate::timer::{Timer, TimerAction, TimerStatus};
 use crate::tui;
 use crate::ui;
 use std::io;
@@ -22,7 +22,7 @@ pub struct TimerMode {
 impl TimerMode {
     fn new(duration: Duration, name: String) -> Self {
         TimerMode {
-            timer: Timer::new(duration, name, TimerType::Single),
+            timer: Timer::new(duration, name),
         }
     }
 }
@@ -63,7 +63,7 @@ impl PomodoroMode {
         break_duration: Duration,
         long_break_duration: Duration,
     ) -> Self {
-        let first_timer = Timer::new(focus_duration, "Focus".to_string(), TimerType::Pomodoro);
+        let first_timer = Timer::new(focus_duration, "Focus".to_string());
         let current_timer = first_timer.clone();
 
         let pomodoro = Pomodoro::new(
@@ -114,6 +114,12 @@ impl Session for PomodoroMode {
 pub struct App {
     session: Box<dyn Session>,
     tick_rate: Duration,
+    mode: Mode,
+}
+
+pub enum Mode {
+    Timer,
+    Pomodoro,
 }
 
 impl App {
@@ -121,6 +127,7 @@ impl App {
         App {
             session: Box::new(TimerMode::new(duration, name)),
             tick_rate,
+            mode: Mode::Timer,
         }
     }
 
@@ -139,6 +146,7 @@ impl App {
                 long_break_duration,
             )),
             tick_rate,
+            mode: Mode::Pomodoro,
         }
     }
 

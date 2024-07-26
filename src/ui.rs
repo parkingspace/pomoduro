@@ -6,8 +6,7 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::timer::{Timer, TimerStatus, TimerType};
-use std::time::Duration;
+use crate::timer::TimerStatus;
 
 pub fn render(f: &mut Frame, app: &mut App) {
     let area = f.size();

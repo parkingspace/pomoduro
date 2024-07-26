@@ -1,10 +1,6 @@
-use std::io;
 use std::time::Duration;
 
-use crate::{
-    timer::{Timer, TimerStatus, TimerType},
-    tui,
-};
+use crate::timer::Timer;
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum PomodoroState {
@@ -48,41 +44,25 @@ impl Pomodoro {
         match self.state {
             PomodoroState::Ready => {
                 self.state = PomodoroState::Focus(1);
-                let new_timer = Timer::new(
-                    self.focus_duration,
-                    "Focus".to_string(),
-                    TimerType::Pomodoro,
-                );
+                let new_timer = Timer::new(self.focus_duration, "Focus".to_string());
                 self.timer = Some(new_timer.clone());
                 Some(new_timer)
             }
             PomodoroState::Focus(session) if session <= self.total_sessions => {
                 self.state = PomodoroState::Break(session);
-                let new_timer = Timer::new(
-                    self.break_duration,
-                    "Break".to_string(),
-                    TimerType::Pomodoro,
-                );
+                let new_timer = Timer::new(self.break_duration, "Break".to_string());
                 self.timer = Some(new_timer.clone());
                 Some(new_timer)
             }
             PomodoroState::Break(session) if session < self.total_sessions => {
                 self.state = PomodoroState::Focus(session + 1);
-                let new_timer = Timer::new(
-                    self.focus_duration,
-                    "Focus".to_string(),
-                    TimerType::Pomodoro,
-                );
+                let new_timer = Timer::new(self.focus_duration, "Focus".to_string());
                 self.timer = Some(new_timer.clone());
                 Some(new_timer)
             }
             PomodoroState::Break(session) if session == self.total_sessions => {
                 self.state = PomodoroState::LongBreak(session);
-                let new_timer = Timer::new(
-                    self.long_break_duration,
-                    "Long Break".to_string(),
-                    TimerType::Pomodoro,
-                );
+                let new_timer = Timer::new(self.long_break_duration, "Long Break".to_string());
                 self.timer = Some(new_timer.clone());
                 Some(new_timer)
             }
@@ -98,17 +78,6 @@ impl Pomodoro {
             _ => None,
         }
     }
-
-    // pub fn run(&mut self, terminal: &mut tui::Tui, tick_rate: Duration) -> io::Result<()> {
-    //     while let Some(mut timer) = self.next_timer() {
-    //         timer.run(terminal, tick_rate)?;
-    //         if timer.get_status() == TimerStatus::Exit {
-    //             break;
-    //         }
-    //     }
-    //
-    //     Ok(())
-    // }
 
     pub fn get_current_session(&self) -> usize {
         match self.state {
