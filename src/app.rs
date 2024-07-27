@@ -77,13 +77,7 @@ impl PomodoroSession {
 
 impl Session for PomodoroSession {
     fn tick(&mut self) {
-        if let Some(timer) = &mut self.current_timer {
-            if timer.get_status() == TimerStatus::Exit {
-                self.pomodoro.set_state(PomodoroState::Completed);
-            } else if timer.is_done() {
-                self.current_timer = self.pomodoro.next_timer();
-            }
-        }
+        self.pomodoro.tick()
     }
 
     fn is_finished(&self) -> bool {

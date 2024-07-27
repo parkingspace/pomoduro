@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::timer::Timer;
+use crate::timer::{Timer, TimerStatus};
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum PomodoroState {
@@ -40,7 +40,7 @@ impl Pomodoro {
         }
     }
 
-    pub fn next_timer(&mut self) -> Option<Timer> {
+    fn next_timer(&mut self) -> Option<Timer> {
         match self.state {
             PomodoroState::Ready => {
                 self.state = PomodoroState::Focus(1);
@@ -76,6 +76,16 @@ impl Pomodoro {
                 None
             }
             _ => None,
+        }
+    }
+
+    pub fn tick(&mut self) {
+        if let Some(timer) = &mut self.timer {
+            if timer.get_status() == TimerStatus::Exit {
+                self.state = PomodoroState::Completed;
+            } else if timer.is_done() {
+                self.timer = self.next_timer();
+            }
         }
     }
 
