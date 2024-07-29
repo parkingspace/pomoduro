@@ -99,19 +99,19 @@ impl Timer {
     pub fn format_duration(&self, total_seconds: Duration) -> String {
         let total_seconds = total_seconds.as_secs();
         match total_seconds {
-            0..=3599 => {
-                let minutes = (total_seconds % 3600) / 60;
-                let seconds = total_seconds % 60;
+            0..SECONDS_PER_HOUR => {
+                let minutes = (total_seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+                let seconds = total_seconds % SECONDS_PER_MINUTE;
 
                 match minutes {
                     0 => format!("{}s", seconds),
                     _ => format!("{}m {}s", minutes, seconds),
                 }
             }
-            3600..=86399 => {
-                let hours = total_seconds / 3600;
-                let minutes = (total_seconds % 3600) / 60;
-                let seconds = total_seconds % 60;
+            SECONDS_PER_HOUR..SECONDS_PER_DAY => {
+                let hours = total_seconds / SECONDS_PER_HOUR;
+                let minutes = (total_seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+                let seconds = total_seconds % SECONDS_PER_MINUTE;
 
                 match hours {
                     0 => format!("{}m {}s", minutes, seconds),
@@ -119,10 +119,10 @@ impl Timer {
                 }
             }
             _ => {
-                let days = total_seconds / 86400;
-                let hours = (total_seconds % 86400) / 3600;
-                let minutes = (total_seconds % 3600) / 60;
-                let seconds = total_seconds % 60;
+                let days = total_seconds / SECONDS_PER_DAY;
+                let hours = (total_seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
+                let minutes = (total_seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
+                let seconds = total_seconds % SECONDS_PER_MINUTE;
 
                 format!("{}d {}h {}m {}s", days, hours, minutes, seconds)
             }
