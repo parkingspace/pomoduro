@@ -1,6 +1,10 @@
 use std::fmt;
 use std::time::{Duration, Instant};
 
+const SECONDS_PER_MINUTE: u64 = 60;
+const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
+const SECONDS_PER_DAY: u64 = 24 * SECONDS_PER_HOUR;
+
 #[derive(Clone)]
 pub struct Timer {
     status: TimerStatus,
@@ -140,5 +144,61 @@ impl fmt::Display for TimerStatus {
             TimerStatus::Done => write!(f, "Done"),
             TimerStatus::Exit => write!(f, "Exit"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_duration() {
+        let timer = Timer::new(Duration::from_secs(0), "Test".to_string());
+        assert_eq!(timer.format_duration(Duration::ZERO), "0s");
+
+        assert_eq!(timer.format_duration(Duration::from_secs(1)), "1s");
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_MINUTE - 1)),
+            "59s"
+        );
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_MINUTE)),
+            "1m 0s"
+        );
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_MINUTE + 1)),
+            "1m 1s"
+        );
+
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_HOUR - 1)),
+            "59m 59s"
+        );
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_HOUR)),
+            "1h 0m 0s"
+        );
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_HOUR + 1)),
+            "1h 0m 1s"
+        );
+
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_DAY - 1)),
+            "23h 59m 59s"
+        );
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_DAY)),
+            "1d 0h 0m 0s"
+        );
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(SECONDS_PER_DAY + 1)),
+            "1d 0h 0m 1s"
+        );
+
+        assert_eq!(
+            timer.format_duration(Duration::from_secs(86400 * 365)),
+            "365d 0h 0m 0s"
+        );
     }
 }
