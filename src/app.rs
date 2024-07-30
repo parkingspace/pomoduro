@@ -1,7 +1,7 @@
 use crossterm::event::KeyModifiers;
 use crossterm::event::{self, Event, KeyCode};
 
-use crate::pomodoro::{Pomodoro, PomodoroState};
+use crate::pomodoro::PomodoroSession;
 use crate::timer::{Timer, TimerAction, TimerSession, TimerStatus};
 use crate::tui;
 use crate::ui;
@@ -13,60 +13,6 @@ pub trait Session {
     fn is_finished(&self) -> bool;
     fn toggle_pause(&mut self);
     fn get_timer(&mut self) -> Option<&mut Timer>;
-}
-
-pub struct PomodoroSession {
-    pomodoro: Pomodoro,
-    current_timer: Option<Timer>,
-}
-
-impl PomodoroSession {
-    fn new(
-        total_sessions: usize,
-        focus_duration: Duration,
-        break_duration: Duration,
-        long_break_duration: Duration,
-    ) -> Self {
-        let first_timer = Timer::new(focus_duration, "Focus".to_string());
-        let current_timer = first_timer.clone();
-
-        let pomodoro = Pomodoro::new(
-            total_sessions,
-            focus_duration,
-            break_duration,
-            long_break_duration,
-            first_timer,
-        );
-
-        PomodoroSession {
-            pomodoro,
-            current_timer: Some(current_timer),
-        }
-    }
-}
-
-impl Session for PomodoroSession {
-    fn tick(&mut self) {
-        self.pomodoro.tick()
-    }
-
-    fn is_finished(&self) -> bool {
-        self.pomodoro.is_completed()
-    }
-
-    fn toggle_pause(&mut self) {
-        if let Some(timer) = &mut self.current_timer {
-            if timer.get_status() == TimerStatus::Running {
-                timer.set_status(TimerStatus::Paused)
-            } else if timer.get_status() == TimerStatus::Paused {
-                timer.set_status(TimerStatus::Running)
-            }
-        }
-    }
-
-    fn get_timer(&mut self) -> Option<&mut Timer> {
-        self.current_timer.as_mut()
-    }
 }
 
 pub struct App {
