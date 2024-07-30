@@ -2,7 +2,7 @@ use crossterm::event::KeyModifiers;
 use crossterm::event::{self, Event, KeyCode};
 
 use crate::pomodoro::{Pomodoro, PomodoroState};
-use crate::timer::{Timer, TimerAction, TimerStatus};
+use crate::timer::{Timer, TimerAction, TimerSession, TimerStatus};
 use crate::tui;
 use crate::ui;
 use std::io;
@@ -13,36 +13,6 @@ pub trait Session {
     fn is_finished(&self) -> bool;
     fn toggle_pause(&mut self);
     fn get_timer(&mut self) -> Option<&mut Timer>;
-}
-
-pub struct TimerSession {
-    timer: Timer,
-}
-
-impl TimerSession {
-    fn new(duration: Duration, name: String) -> Self {
-        TimerSession {
-            timer: Timer::new(duration, name),
-        }
-    }
-}
-
-impl Session for TimerSession {
-    fn tick(&mut self) {
-        self.timer.tick();
-    }
-
-    fn is_finished(&self) -> bool {
-        self.timer.get_status() == TimerStatus::Exit
-    }
-
-    fn toggle_pause(&mut self) {
-        self.timer.toggle_pause();
-    }
-
-    fn get_timer(&mut self) -> Option<&mut Timer> {
-        Some(&mut self.timer)
-    }
 }
 
 pub struct PomodoroSession {

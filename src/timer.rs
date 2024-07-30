@@ -1,18 +1,10 @@
+use crate::app::Session;
 use std::fmt;
 use std::time::{Duration, Instant};
 
 const SECONDS_PER_MINUTE: u64 = 60;
 const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
 const SECONDS_PER_DAY: u64 = 24 * SECONDS_PER_HOUR;
-
-#[derive(Clone)]
-pub struct Timer {
-    status: TimerStatus,
-    started_at: Instant,
-    elapsed: Duration,
-    duration: Duration,
-    name: String,
-}
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum TimerStatus {
@@ -27,12 +19,21 @@ pub enum TimerAction {
     Quit,
 }
 
+#[derive(Clone)]
+pub struct Timer {
+    status: TimerStatus,
+    started_at: Instant,
+    elapsed: Duration,
+    duration: Duration,
+    name: String,
+}
+
 impl Timer {
-    pub fn new(t: Duration, name: String) -> Self {
+    pub fn new(duration: Duration, name: String) -> Self {
         Timer {
             started_at: Instant::now(),
             elapsed: Duration::ZERO,
-            duration: t,
+            duration,
             status: TimerStatus::Running,
             name,
         }
@@ -41,14 +42,6 @@ impl Timer {
     pub fn tick(&mut self) {
         if self.status == TimerStatus::Running && self.is_done() {
             self.status = TimerStatus::Exit;
-        }
-    }
-
-    pub fn elapsed_time(&self) -> Duration {
-        match self.status {
-            TimerStatus::Running => self.elapsed + self.started_at.elapsed(),
-            TimerStatus::Paused | TimerStatus::Done => self.elapsed,
-            _ => self.elapsed,
         }
     }
 
@@ -66,16 +59,12 @@ impl Timer {
         }
     }
 
-    pub fn is_done(&self) -> bool {
-        self.elapsed_time() >= self.duration
-    }
-
-    pub fn get_status(&self) -> TimerStatus {
-        self.status
-    }
-
-    pub fn set_status(&mut self, status: TimerStatus) {
-        self.status = status
+    pub fn elapsed_time(&self) -> Duration {
+        match self.status {
+            TimerStatus::Running => self.elapsed + self.started_at.elapsed(),
+            TimerStatus::Paused | TimerStatus::Done => self.elapsed,
+            _ => self.elapsed,
+        }
     }
 
     pub fn remaining_time(&self) -> Duration {
@@ -86,6 +75,18 @@ impl Timer {
 
         // Round up for display: this is necessary because Duration includes fractional seconds
         Duration::from_secs(precise_remaining.as_secs().saturating_add(1))
+    }
+
+    pub fn is_done(&self) -> bool {
+        self.elapsed_time() >= self.duration
+    }
+
+    pub fn get_status(&self) -> TimerStatus {
+        self.status
+    }
+
+    pub fn set_status(&mut self, status: TimerStatus) {
+        self.status = status
     }
 
     pub fn get_duration(&self) -> Duration {
@@ -144,6 +145,36 @@ impl fmt::Display for TimerStatus {
             TimerStatus::Done => write!(f, "Done"),
             TimerStatus::Exit => write!(f, "Exit"),
         }
+    }
+}
+
+pub struct TimerSession {
+    timer: Timer,
+}
+
+impl TimerSession {
+    pub fn new(duration: Duration, name: String) -> Self {
+        TimerSession {
+            timer: Timer::new(duration, name),
+        }
+    }
+}
+
+impl Session for TimerSession {
+    fn tick(&mut self) {
+        self.timer.tick();
+    }
+
+    fn is_finished(&self) -> bool {
+        self.timer.get_status() == TimerStatus::Exit
+    }
+
+    fn toggle_pause(&mut self) {
+        self.timer.toggle_pause();
+    }
+
+    fn get_timer(&mut self) -> Option<&mut Timer> {
+        Some(&mut self.timer)
     }
 }
 
