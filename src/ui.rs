@@ -33,9 +33,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
         }
         Some(timer) => {
             // Running UI:
-            let ratio = (timer.elapsed_time().as_secs_f64().floor()
-                / timer.get_duration().as_secs_f64())
-            .min(1.0);
+            let ratio =
+                (timer.elapsed_time().as_secs_f64() / timer.get_duration().as_secs_f64()).min(1.0);
             let label = timer.to_string();
 
             let progress = Gauge::default()

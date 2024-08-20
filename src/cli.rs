@@ -32,6 +32,20 @@ pub enum Commands {
         #[arg(short, long="long", value_parser = parse_duration)]
         long_break_duration: Option<Duration>,
     },
+
+    #[command(about = "Host a shared pomodoro session", visible_alias = "h")]
+    Host {
+        #[arg(short, long)]
+        port: Option<u16>,
+    },
+
+    #[command(about = "Join a shared pomodoro session", visible_alias = "j")]
+    Join {
+        #[arg(short, long)]
+        address: Option<String>,
+        #[arg(short, long)]
+        port: Option<u16>,
+    },
 }
 
 pub fn parse() -> Cli {

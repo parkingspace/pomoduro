@@ -1,4 +1,5 @@
 use crate::app::Session;
+use crate::pomodoro::Pomodoro;
 use std::fmt;
 use std::time::{Duration, Instant};
 
@@ -175,6 +176,10 @@ impl Session for TimerSession {
 
     fn get_timer(&mut self) -> Option<&mut Timer> {
         Some(&mut self.timer)
+    }
+
+    fn get_pomodoro(&mut self) -> Option<&mut Pomodoro> {
+        None
     }
 }
 

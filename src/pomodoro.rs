@@ -171,4 +171,8 @@ impl Session for PomodoroSession {
     fn get_timer(&mut self) -> Option<&mut Timer> {
         self.pomodoro.get_timer()
     }
+
+    fn get_pomodoro(&mut self) -> Option<&mut Pomodoro> {
+        Some(&mut self.pomodoro)
+    }
 }

@@ -1,18 +1,37 @@
-use crossterm::event::KeyModifiers;
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEventKind, KeyModifiers};
 
-use crate::pomodoro::PomodoroSession;
+use crate::event::{Event, Events};
+use crate::pomodoro::{Pomodoro, PomodoroSession};
 use crate::timer::{Timer, TimerAction, TimerSession, TimerStatus};
 use crate::tui;
 use crate::ui;
 use std::io;
 use std::time::{Duration, Instant};
 
+#[derive(Debug, Clone)]
+pub struct SessionInfo {
+    pub timer: TimerInfo,
+    pub pomodoro: Option<PomodoroInfo>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TimerInfo {
+    pub name: String,
+    pub remaining: Duration,
+}
+
+#[derive(Debug, Clone)]
+pub struct PomodoroInfo {
+    pub total_sessions: usize,
+    pub current_session: usize,
+}
+
 pub trait Session {
     fn tick(&mut self);
     fn is_finished(&self) -> bool;
     fn toggle_pause(&mut self);
     fn get_timer(&mut self) -> Option<&mut Timer>;
+    fn get_pomodoro(&mut self) -> Option<&mut Pomodoro>;
 }
 
 pub struct App {
@@ -54,33 +73,35 @@ impl App {
         }
     }
 
-    pub fn run(&mut self, terminal: &mut tui::Tui) -> io::Result<()> {
-        let mut last_tick = Instant::now();
+    pub async fn run(&mut self, terminal: &mut tui::Tui) -> io::Result<()> {
+        let mut events = Events::new();
 
         loop {
-            terminal.draw(|f| ui::render(f, self))?;
-
-            let timeout = self.tick_rate.saturating_sub(last_tick.elapsed());
-
-            if event::poll(timeout)? {
-                if let Event::Key(key) = event::read()? {
-                    if key.kind == event::KeyEventKind::Press {
-                        if let Some(action) = Self::key_to_action(key.code, key.modifiers) {
-                            self.handle_action(action)
-                        }
+            if let Some(event) = events.next().await {
+                match event {
+                    Event::Render => {
+                        terminal.draw(|f| ui::render(f, self))?;
+                    }
+                    _ => {
+                        self.handle_event(event)?;
                     }
                 }
-            }
-
-            if last_tick.elapsed() >= self.tick_rate {
-                self.session.tick();
-                last_tick = Instant::now();
             }
 
             if self.should_quit() {
                 break;
             }
         }
+
+        Ok(())
+    }
+
+    fn handle_event(&mut self, event: Event) -> io::Result<()> {
+        if let Event::Crossterm(CrosstermEvent::Key(key)) = event {
+            if let Some(action) = Self::key_to_action(key.code, key.modifiers) {
+                self.handle_action(action);
+            }
+        };
 
         Ok(())
     }
@@ -117,5 +138,35 @@ impl App {
 
     pub fn get_timer(&mut self) -> Option<&mut Timer> {
         self.session.get_timer()
+    }
+
+    pub fn get_session_info(&mut self) -> SessionInfo {
+        match self.mode {
+            Mode::Timer => SessionInfo {
+                timer: self.get_timer_info(),
+                pomodoro: None,
+            },
+            Mode::Pomodoro => SessionInfo {
+                timer: self.get_timer_info(),
+                pomodoro: self.get_pomodoro_info(),
+            },
+        }
+    }
+
+    fn get_timer_info(&mut self) -> TimerInfo {
+        self.session
+            .get_timer()
+            .map(|timer| TimerInfo {
+                name: timer.get_name().to_string(),
+                remaining: timer.remaining_time(),
+            })
+            .unwrap()
+    }
+
+    fn get_pomodoro_info(&mut self) -> Option<PomodoroInfo> {
+        self.session.get_pomodoro().map(|pomodoro| PomodoroInfo {
+            total_sessions: pomodoro.get_total_sessions(),
+            current_session: pomodoro.get_current_session(),
+        })
     }
 }
