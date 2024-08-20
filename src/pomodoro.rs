@@ -159,12 +159,8 @@ impl Session for PomodoroSession {
     }
 
     fn toggle_pause(&mut self) {
-        if let Some(timer) = &mut self.pomodoro.get_timer() {
-            if timer.get_status() == TimerStatus::Running {
-                timer.set_status(TimerStatus::Paused)
-            } else if timer.get_status() == TimerStatus::Paused {
-                timer.set_status(TimerStatus::Running)
-            }
+        if let Some(timer) = &mut self.pomodoro.timer {
+            timer.toggle_pause();
         }
     }
 
