@@ -1,7 +1,7 @@
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEventKind, KeyModifiers};
 
 use crate::event::{Event, Events};
-use crate::pomodoro::{Pomodoro, PomodoroSession};
+use crate::pomodoro::{Pomodoro, PomodoroSession, PomodoroState};
 use crate::timer::{Timer, TimerAction, TimerSession, TimerStatus};
 use crate::tui;
 use crate::ui;
@@ -132,7 +132,12 @@ impl App {
         let timer = self.get_timer().unwrap();
 
         match action {
-            TimerAction::Quit => timer.set_status(TimerStatus::Exit),
+            TimerAction::Quit => {
+                timer.set_status(TimerStatus::Exit);
+                if let Some(pomodoro) = self.session.get_pomodoro() {
+                    pomodoro.set_state(PomodoroState::Completed)
+                }
+            }
             TimerAction::Pause => {
                 self.session.toggle_pause();
             }
