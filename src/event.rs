@@ -6,6 +6,7 @@ pub enum Event {
     Crossterm(CrosstermEvent),
     Error,
     Render,
+    Tick,
 }
 
 type Stream = std::pin::Pin<Box<dyn futures::Stream<Item = Event>>>;
@@ -20,6 +21,7 @@ impl Default for Events {
             streams: tokio_stream::StreamMap::from_iter([
                 ("crossterm", crossterm_stream()),
                 ("render", render_stream()),
+                ("tick", tick_stream()),
             ]),
         }
     }
@@ -57,4 +59,13 @@ fn render_stream() -> Stream {
     let render_delay = std::time::Duration::from_secs_f64(1.0 / FRAME_RATE);
     let render_interval = tokio::time::interval(render_delay);
     Box::pin(IntervalStream::new(render_interval).map(|_| Event::Render))
+}
+
+fn tick_stream() -> Stream {
+    use tokio_stream::wrappers::IntervalStream;
+
+    const TICK_RATE: f64 = 1.0;
+    let tick_delay = std::time::Duration::from_secs_f64(1.0 / TICK_RATE);
+    let tick_interval = tokio::time::interval(tick_delay);
+    Box::pin(IntervalStream::new(tick_interval).map(|_| Event::Tick))
 }

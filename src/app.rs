@@ -79,6 +79,9 @@ impl App {
         loop {
             if let Some(event) = events.next().await {
                 match event {
+                    Event::Tick => {
+                        self.session.tick();
+                    }
                     Event::Render => {
                         terminal.draw(|f| ui::render(f, self))?;
                     }
