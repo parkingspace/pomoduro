@@ -9,7 +9,7 @@ pub enum Event {
     Tick,
 }
 
-type Stream = std::pin::Pin<Box<dyn futures::Stream<Item = Event>>>;
+type Stream = std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send>>;
 
 pub struct Events {
     streams: tokio_stream::StreamMap<&'static str, Stream>,

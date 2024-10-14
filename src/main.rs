@@ -1,20 +1,22 @@
+mod actor;
 mod app;
 mod cli;
 mod event;
-mod host;
 mod parser;
 mod pomodoro;
 mod timer;
 mod tui;
 mod ui;
 
-use app::{App, SessionInfo};
-use timer::TimerAction;
-use tokio::net::TcpStream;
-use tokio::sync::{broadcast, mpsc};
+use app::App;
+use futures::{SinkExt, StreamExt};
+use std::{error::Error, net::SocketAddr};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{TcpListener, TcpStream};
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+use tokio_tungstenite::tungstenite::Message;
 
 use crate::cli::Commands;
-use std::io;
 use std::time::Duration;
 
 const FOCUS_DURATION: u64 = 25;
@@ -22,7 +24,7 @@ const BREAK_DURATION: u64 = 5;
 const LONG_BREAK_DURATION: u64 = 15;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<(), Box<dyn Error>> {
     let cli = cli::parse();
     let tick_rate = Duration::from_millis(250);
 
@@ -57,43 +59,106 @@ async fn main() -> io::Result<()> {
             .await?;
             tui::restore()?;
         }
-        // Some(Commands::Host { port }) => {
-        //     // host
-        //     // 1. start up TCP server
-        //     let port = port.unwrap_or(8080);
-        //     let addr = format!("127.0.0.0:{}", port);
-        //     let listener = TcpListener::bind(addr).await?;
-        //     let (state_tx, _) = broadcast::channel(16);
-        //     let (command_tx, command_rx) = mpsc::channel(100);
-        //
-        //     // 2. create new host
-        //
-        //     // 3. listen for new connections in loop
-        //     while let Ok((stream, addr)) = listener.accept().await {
-        //         println!("New client connected: {}", addr);
-        //         let state_rx = state_tx.subscribe();
-        //         // 4. listen for commands sent from participants
-        //         // 5. broadcast new states to the participants
-        //         let command_tx = command_tx.clone();
-        //         tokio::spawn(handle_client(stream, state_rx, command_tx));
-        //     }
-        // }
-        // Some(Commands::Join { address, port }) => {
-        //     // join
-        //     use tokio::net::TcpStream;
-        //     // 1. connect to the server using ip address
-        //     let address = address.clone().unwrap_or("127.0.0.0".to_string());
-        //     let port = port.unwrap_or(8080);
-        //     let addr = format!("{}:{}", address, port);
-        //     let mut stream = TcpStream::connect(addr).await?;
-        //     // 2. receive state updates in loop
-        //     // 3. send commands to the host
-        //     // 4. update local UI based on received state
-        // }
+        Some(Commands::Host { port }) => {
+            let port = port.unwrap_or(8080);
+            let addr = SocketAddr::from(([127, 0, 0, 1], port));
+
+            host(addr).await;
+
+            tui::restore()?;
+        }
+        Some(Commands::Join { address, port }) => {
+            use tokio::net;
+
+            let port = port.unwrap_or(8080);
+            let address = address.clone().unwrap_or("127.0.0.1".to_string());
+            let addr = format!("{}:{}", address, port);
+
+            if let Err(e) = net::lookup_host(&addr).await {
+                println!("Host not found: {:?}", e);
+            }
+
+            let ws_addr = format!("ws://{}", addr).into_client_request().unwrap();
+            let (ws_stream, _) = tokio_tungstenite::connect_async(ws_addr)
+                .await
+                .expect("Failed to connect");
+
+            let (mut outgoing, incoming) = ws_stream.split();
+
+            let (sender, receiver) = flume::unbounded();
+
+            tokio::spawn(read_stdin(sender.clone()));
+
+            let ws_to_stdout = incoming.for_each(|msg| async move {
+                println!("Received message: {:?}", msg);
+
+                let data = msg.unwrap().into_data();
+                tokio::io::stdout().write_all(&data).await.unwrap();
+            });
+
+            let stdin_to_ws = async move {
+                while let Ok(msg) = receiver.recv_async().await {
+                    outgoing.send(msg).await.unwrap();
+                }
+            };
+
+            tokio::pin!(ws_to_stdout, stdin_to_ws);
+            tokio::select! {
+                _ = &mut ws_to_stdout => {}
+                _ = &mut stdin_to_ws => {}
+            }
+        }
         _ => (),
     };
-    // app.run(&mut tui::init()?)?;
-    // tui::restore()?;
 
     Ok(())
+}
+
+async fn host(addr: SocketAddr) {
+    let listener = TcpListener::bind(addr).await.unwrap();
+    println!("Listening on {}", addr);
+
+    while let Ok((socket, addr)) = listener.accept().await {
+        tokio::spawn(async move {
+            handle_connection(addr, socket).await;
+        });
+    }
+}
+
+async fn handle_connection(client_addr: SocketAddr, socket: TcpStream) {
+    let ws_stream = tokio_tungstenite::accept_async(socket)
+        .await
+        .expect("Error during the websocket handshake occurred");
+
+    let (outgoing, mut incoming) = ws_stream.split();
+
+    println!("WebSocket connection established: {}", client_addr);
+
+    loop {
+        let msg = match incoming.next().await {
+            Some(msg) => msg,
+            None => {
+                println!("WebSocket connection closed");
+                break;
+            }
+        };
+
+        println!("Received message: {:?}", msg);
+    }
+}
+
+async fn read_stdin(sender: flume::Sender<Message>) {
+    let mut stdin = BufReader::new(tokio::io::stdin());
+    let mut buffer = String::new();
+
+    loop {
+        buffer.clear();
+        if stdin.read_line(&mut buffer).await.unwrap() == 0 {
+            break;
+        }
+        sender
+            .send_async(Message::Text(buffer.trim().to_string()))
+            .await
+            .unwrap();
+    }
 }

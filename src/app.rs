@@ -1,4 +1,4 @@
-use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyModifiers};
 
 use crate::event::{Event, Events};
 use crate::pomodoro::{Pomodoro, PomodoroSession, PomodoroState};
@@ -6,7 +6,7 @@ use crate::timer::{Timer, TimerAction, TimerSession, TimerStatus};
 use crate::tui;
 use crate::ui;
 use std::io;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct SessionInfo {
@@ -26,7 +26,7 @@ pub struct PomodoroInfo {
     pub current_session: usize,
 }
 
-pub trait Session {
+pub trait Session: Send {
     fn tick(&mut self);
     fn is_finished(&self) -> bool;
     fn toggle_pause(&mut self);
@@ -76,18 +76,16 @@ impl App {
     pub async fn run(&mut self, terminal: &mut tui::Tui) -> io::Result<()> {
         let mut events = Events::new();
 
-        loop {
-            if let Some(event) = events.next().await {
-                match event {
-                    Event::Tick => {
-                        self.session.tick();
-                    }
-                    Event::Render => {
-                        terminal.draw(|f| ui::render(f, self))?;
-                    }
-                    _ => {
-                        self.handle_event(event)?;
-                    }
+        while let Some(event) = events.next().await {
+            match event {
+                Event::Tick => {
+                    self.session.tick();
+                }
+                Event::Render => {
+                    terminal.draw(|f| ui::render(f, self))?;
+                }
+                _ => {
+                    self.handle_event(event)?;
                 }
             }
 

@@ -15,6 +15,7 @@ pub enum TimerStatus {
     Exit, // when the program is exited
 }
 
+#[derive(Clone)]
 pub enum TimerAction {
     Pause,
     Quit,
