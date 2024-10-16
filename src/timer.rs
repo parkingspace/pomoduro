@@ -1,5 +1,6 @@
 use crate::app::Session;
 use crate::pomodoro::Pomodoro;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::time::{Duration, Instant};
 
@@ -15,7 +16,7 @@ pub enum TimerStatus {
     Exit, // when the program is exited
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum TimerAction {
     Pause,
     Quit,

@@ -1,4 +1,3 @@
-mod actor;
 mod app;
 mod cli;
 mod event;
@@ -9,12 +8,7 @@ mod tui;
 mod ui;
 
 use app::App;
-use futures::{SinkExt, StreamExt};
 use std::{error::Error, net::SocketAddr};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::{TcpListener, TcpStream};
-use tokio_tungstenite::tungstenite::client::IntoClientRequest;
-use tokio_tungstenite::tungstenite::Message;
 
 use crate::cli::Commands;
 use std::time::Duration;
@@ -63,7 +57,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let port = port.unwrap_or(8080);
             let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
-            host(addr).await;
+            let (mut app, ws_handler) = App::new_shared_pomodoro(
+                4,
+                Duration::from_secs(FOCUS_DURATION),
+                Duration::from_secs(BREAK_DURATION),
+                Duration::from_secs(LONG_BREAK_DURATION),
+                tick_rate,
+            );
+
+            tokio::spawn(async move { ws_handler.host(addr).await });
+            app.run(&mut tui::init()?).await?;
 
             tui::restore()?;
         }
@@ -78,87 +81,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("Host not found: {:?}", e);
             }
 
-            let ws_addr = format!("ws://{}", addr).into_client_request().unwrap();
-            let (ws_stream, _) = tokio_tungstenite::connect_async(ws_addr)
-                .await
-                .expect("Failed to connect");
+            let (mut app, ws_handler) = App::new_shared_pomodoro(
+                4,
+                Duration::from_secs(FOCUS_DURATION),
+                Duration::from_secs(BREAK_DURATION),
+                Duration::from_secs(LONG_BREAK_DURATION),
+                tick_rate,
+            );
 
-            let (mut outgoing, incoming) = ws_stream.split();
+            tokio::spawn(async move { ws_handler.join(&addr).await });
 
-            let (sender, receiver) = flume::unbounded();
-
-            tokio::spawn(read_stdin(sender.clone()));
-
-            let ws_to_stdout = incoming.for_each(|msg| async move {
-                println!("Received message: {:?}", msg);
-
-                let data = msg.unwrap().into_data();
-                tokio::io::stdout().write_all(&data).await.unwrap();
-            });
-
-            let stdin_to_ws = async move {
-                while let Ok(msg) = receiver.recv_async().await {
-                    outgoing.send(msg).await.unwrap();
-                }
-            };
-
-            tokio::pin!(ws_to_stdout, stdin_to_ws);
-            tokio::select! {
-                _ = &mut ws_to_stdout => {}
-                _ = &mut stdin_to_ws => {}
-            }
+            app.run(&mut tui::init()?).await?;
+            tui::restore()?;
         }
         _ => (),
     };
 
     Ok(())
-}
-
-async fn host(addr: SocketAddr) {
-    let listener = TcpListener::bind(addr).await.unwrap();
-    println!("Listening on {}", addr);
-
-    while let Ok((socket, addr)) = listener.accept().await {
-        tokio::spawn(async move {
-            handle_connection(addr, socket).await;
-        });
-    }
-}
-
-async fn handle_connection(client_addr: SocketAddr, socket: TcpStream) {
-    let ws_stream = tokio_tungstenite::accept_async(socket)
-        .await
-        .expect("Error during the websocket handshake occurred");
-
-    let (outgoing, mut incoming) = ws_stream.split();
-
-    println!("WebSocket connection established: {}", client_addr);
-
-    loop {
-        let msg = match incoming.next().await {
-            Some(msg) => msg,
-            None => {
-                println!("WebSocket connection closed");
-                break;
-            }
-        };
-
-        println!("Received message: {:?}", msg);
-    }
-}
-
-async fn read_stdin(sender: flume::Sender<Message>) {
-    let mut stdin = BufReader::new(tokio::io::stdin());
-    let mut buffer = String::new();
-
-    loop {
-        buffer.clear();
-        if stdin.read_line(&mut buffer).await.unwrap() == 0 {
-            break;
-        }
-        sender
-            .send_async(Message::Text(buffer.trim().to_string()))
-            .await
-            .unwrap();
-    }
 }
