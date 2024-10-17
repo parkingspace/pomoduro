@@ -65,14 +65,6 @@ impl WebSocketHandler {
                 .await
                 .expect("Error during the websocket handshake occurred");
 
-            // NOTE: incoming: read from client
-            // outgoing: write to client
-            // how to read outgone? use ws_to_app_receiver
-            // Problems:
-            // outgoing is not being used -> where should I use then?
-            // outgoing must be used when the client(from Join) triggers an event
-            // how do I know when the user presses a key?
-            // -> when user presses a key, pass it via app_to_ws_sender.send()
             let (mut outgoing, mut incoming) = ws_stream.split();
 
             loop {
@@ -88,7 +80,7 @@ impl WebSocketHandler {
                         println!("Received via app_to_ws_receiver: {:?}", action);
                         let msg = serde_json::to_string(&action).unwrap();
                         if outgoing.send(Message::text(msg)).await.is_err() {
-                            break; // Failed to send, assume connection is closed
+                            break;
                         }
                     }
                 }
@@ -103,15 +95,23 @@ impl WebSocketHandler {
             .await
             .expect("Failed to connect");
 
-        let (mut _outgoing, mut incoming) = ws_stream.split();
+        let (mut outgoing, mut incoming) = ws_stream.split();
 
-        tokio::spawn(async move {
-            while let Some(Ok(message)) = incoming.next().await {
-                let message = serde_json::from_str(&message.to_string()).unwrap();
-                println!("JOIN: Message from client: {:?}", message);
-                self.ws_to_app_sender.send_async(message).await.unwrap();
+        loop {
+            tokio::select! {
+                Some(Ok(message)) = incoming.next() => {
+                    let message = serde_json::from_str(&message.to_string()).unwrap();
+                    println!("JOIN: Message from client: {:?}", message);
+                    self.ws_to_app_sender.send_async(message).await.unwrap();
+                }
+                Ok(action) = self.app_to_ws_receiver.recv_async() => {
+                    let msg = serde_json::to_string(&action).unwrap();
+                    if outgoing.send(Message::text(msg)).await.is_err() {
+                        break;
+                    }
+                }
             }
-        });
+        }
     }
 }
 
@@ -258,7 +258,6 @@ impl App {
         // NOTE: timer: this returns true if the TimerStatus is Exit
         // pomodoro: this returns true if the PomodoroState is Completed
         // Exit and Completed are different things so they must be handled separately
-        // TODO: refactor this
         self.session.is_finished()
     }
 
