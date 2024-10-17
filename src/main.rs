@@ -6,6 +6,7 @@ mod pomodoro;
 mod timer;
 mod tui;
 mod ui;
+mod websocket;
 
 use app::App;
 use std::{error::Error, net::SocketAddr};
