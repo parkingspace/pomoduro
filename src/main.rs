@@ -8,18 +8,45 @@ mod tui;
 mod ui;
 mod websocket;
 
-use app::App;
-use std::{error::Error, net::SocketAddr};
-
 use crate::cli::Commands;
+
+use app::App;
+use std::fs::File;
+use std::io::Write;
 use std::time::Duration;
+use std::{error::Error, net::SocketAddr};
+use tracing_subscriber::{fmt, EnvFilter};
 
 const FOCUS_DURATION: u64 = 25;
 const BREAK_DURATION: u64 = 5;
 const LONG_BREAK_DURATION: u64 = 15;
 
+fn clear_log_file(path: &str) -> std::io::Result<()> {
+    let mut file = File::create(path)?;
+    file.set_len(0)?;
+    file.flush()?;
+
+    Ok(())
+}
+
+fn setup_tracing() -> Result<(), Box<dyn Error>> {
+    clear_log_file("./log/pomoduro.log")?;
+
+    let file_appender = tracing_appender::rolling::never("./log", "pomoduro.log");
+    let subscriber = fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_writer(file_appender)
+        .pretty()
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    setup_tracing()?;
+
     let cli = cli::parse();
     let tick_rate = Duration::from_millis(250);
 

@@ -8,6 +8,7 @@ use crate::websocket::WebSocketHandler;
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyModifiers};
 use std::io;
 use std::time::Duration;
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct SessionInfo {
