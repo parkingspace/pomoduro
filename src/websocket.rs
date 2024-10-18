@@ -60,7 +60,7 @@ impl WebSocketHandler {
         }
     }
 
-    pub async fn join(self, addr: &str) {
+    pub async fn join(self, addr: &SocketAddr) {
         let ws_addr = format!("ws://{}", addr).into_client_request().unwrap();
 
         let (ws_stream, _) = tokio_tungstenite::connect_async(ws_addr)

@@ -111,6 +111,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("Host not found: {:?}", e);
             }
 
+            let addr = addr.parse::<SocketAddr>().unwrap();
+
             let (mut app, ws_handler) = App::new_shared_pomodoro(
                 4,
                 Duration::from_secs(FOCUS_DURATION),
