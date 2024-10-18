@@ -35,6 +35,8 @@ fn setup_tracing() -> Result<(), Box<dyn Error>> {
     let file_appender = tracing_appender::rolling::never("./log", "pomoduro.log");
     let subscriber = fmt()
         .with_env_filter(EnvFilter::from_default_env())
+        .with_ansi(false)
+        .with_target(true)
         .with_writer(file_appender)
         .pretty()
         .finish();
