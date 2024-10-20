@@ -3,10 +3,11 @@ use crate::pomodoro::{Pomodoro, PomodoroSession, PomodoroState};
 use crate::timer::{Timer, TimerAction, TimerSession, TimerStatus};
 use crate::tui;
 use crate::ui;
-use crate::websocket::WebSocketHandler;
+use crate::websocket::{TimerMessage, WebSocketHandler};
 
 use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyModifiers};
 use std::io;
+use std::net::SocketAddr;
 use std::time::Duration;
 use tracing::debug;
 
@@ -134,6 +135,10 @@ impl App {
                     }
                 }
                 SessionType::Shared(ws_handler) => {
+                    let local_addr = *ws_handler.local_addr.lock().await;
+                    let local_addr =
+                        local_addr.unwrap_or_else(|| SocketAddr::from(([0, 0, 0, 0], 0)));
+
                     tokio::select! {
                         Some(event) = events.next() => {
                             match event {
@@ -145,16 +150,18 @@ impl App {
                                 }
                                 Event::Crossterm(CrosstermEvent::Key(key)) => {
                                     if let Some(action) = self.key_to_action(key.code, key.modifiers) {
-                                        ws_handler.app_to_ws_sender.send_async(action).await.unwrap();
-                                        self.handle_action(action);
+                                        let timer_message = TimerMessage { action, sender: local_addr };
+                                        ws_handler.app_to_ws_sender.send_async(timer_message.clone()).await.unwrap();
+                                        debug!("{:?} - APP(APP_TO_WS): Action({:?}) SENT TO WS", timer_message.sender, action);
+                                        self.handle_action(timer_message.action);
                                     }
                                 }
                                 _ => ()
                             }
                         }
-                        Ok(app_message) = ws_handler.ws_to_app_receiver.recv_async() => {
-                            println!("YAY!!! Received via ws_to_app_receiver: {:?}", app_message);
-                            self.handle_ws_message(app_message);
+                        Ok(timer_message) = ws_handler.ws_to_app_receiver.recv_async() => {
+                            debug!("{:?} - APP(WS_TO_APP): Message RECEIVED FROM WS: {:?}", local_addr, timer_message);
+                            self.handle_ws_message(timer_message.action);
                         }
                     }
                 }
