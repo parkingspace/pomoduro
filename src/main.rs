@@ -15,7 +15,7 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 use std::{error::Error, net::SocketAddr};
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::EnvFilter;
 
 const FOCUS_DURATION: u64 = 25;
 const BREAK_DURATION: u64 = 5;
@@ -29,25 +29,21 @@ fn clear_log_file(path: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn setup_tracing() -> Result<(), Box<dyn Error>> {
-    clear_log_file("./log/pomoduro.log")?;
-
+fn setup_tracing() {
     let file_appender = tracing_appender::rolling::never("./log", "pomoduro.log");
-    let subscriber = fmt()
+
+    tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .with_ansi(false)
         .with_target(true)
         .with_writer(file_appender)
-        .pretty()
-        .finish();
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-
-    Ok(())
+        .with_thread_ids(true)
+        .init();
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    setup_tracing()?;
+    setup_tracing();
 
     let cli = cli::parse();
     let tick_rate = Duration::from_millis(250);
@@ -84,6 +80,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             tui::restore()?;
         }
         Some(Commands::Host { port }) => {
+            clear_log_file("./log/pomoduro.log")?;
+
             let port = port.unwrap_or(8080);
             let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
@@ -95,7 +93,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 tick_rate,
             );
 
-            tokio::spawn(async move { ws_handler.host(addr).await });
+            tokio::spawn(async move { ws_handler.host(&addr).await });
             app.run(&mut tui::init()?).await?;
 
             tui::restore()?;
