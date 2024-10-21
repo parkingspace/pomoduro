@@ -19,3 +19,4 @@ tokio-util = {version = "0.7.10", features = ["codec"]}
 tracing = "0.1.40"
 tracing-appender = "0.2.3"
 tracing-subscriber = {version="0.3.18", features=["env-filter"]}
+tui-input = "0.10.1"
